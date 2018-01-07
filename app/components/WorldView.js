@@ -51,6 +51,15 @@ export default class WorldView extends Component {
     context.fill();
   };
 
+  drawCircle({ context, fillColor, x, y, radius }) {
+    context.fillStyle = fillColor;
+    const ctr = this.worldToCanvas({ x, y });
+    const radCanvas = radius * this.scale;
+    context.beginPath();
+    context.arc(ctr.x, ctr.y, radCanvas, 0, Math.PI * 2);
+    context.fill();
+  };
+
   drawState(objects=[], center) {
     const { canvas } = this;
     const { width, height } = canvas;
@@ -64,6 +73,11 @@ export default class WorldView extends Component {
       if (object.type === 'rectangle') {
       } else if (object.type === 'rect') {
         this.drawRectangle({
+          ...object,
+          context: ctx,
+        });
+      } else if (object.type === 'circle') {
+        this.drawCircle({
           ...object,
           context: ctx,
         });

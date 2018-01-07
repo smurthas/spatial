@@ -14,6 +14,8 @@ import { FormattedMessage } from 'react-intl';
 import messages from './messages';
 
 import Simulator from '../../sim/sim';
+import BicyclePathFollower from '../../sim/controllers/bicycle';
+import EventEmitter from 'events';
 
 import * as robot from '../myrobot';
 
@@ -24,12 +26,50 @@ import WorldView from '../../components/WorldView';
 import CodeMirror from 'react-codemirror';
 import 'codemirror/mode/javascript/javascript';
 
-const defaultCode = `function doStep(sensors) {
-  return {
-    accel: 1,
-    brake: 0,
-    steer_angle: 0,
+
+const modules = {
+  'pid-path-follower': BicyclePathFollower
+};
+
+function evalCode(code) {
+  const evalThis = {
+    require: (mod) => {
+      return modules[mod];
+    },
   };
+  const fn = function() {
+    return eval('console.log("this:", this); ' + code);
+  }
+  return fn.call(evalThis);
+}
+
+const defaultCode = `
+const PIDPathFollower = this.require('pid-path-follower');
+
+function onInit(topics) {
+  const pathFollower = new PIDPathFollower({
+    publishControlsTopic: '/ego/controls',
+  }, topics);
+
+  topics.on('/ego/pose', pose => pathFollower.on('pose', pose));
+  topics.on('/ego/path', path => pathFollower.on('path', path));
+}
+
+function onSensors(publish, { vehicle, cones, color }) {
+  // if over the stop box, well, stop
+  if (color === 'black') {
+    publish('/ego/path', []);
+    publish('/ego/controls', { theta: 0, b: 5 });
+    return;
+  }
+
+  const path = cones.map(({ x, y }) => {
+    return {
+      position: { x: x + 10, y, z: 0 },
+      orientation: { roll: 0, pitch: 0, yaw: 1.57 },
+    };
+  });
+  publish('/ego/path', path);
 }`;
 
 const initialVehicle = () => {
@@ -41,11 +81,12 @@ const initialVehicle = () => {
   };
 }
 
+let local = 0;
+
 export default class HomePage extends React.PureComponent { // eslint-disable-line react/prefer-stateless-function
   constructor() {
     super();
-    const vehicle = initialVehicle();
-
+    this.dt = 0.1;
     this.scenarioType = Slalom;
     // this.scenarioType = DriveToBox;
     const { name, description } = this.scenarioType.info();
@@ -54,13 +95,102 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
     this.scenario = new this.scenarioType();
     this.state = {
       code,
-      vehicle,
+      vehicle: initialVehicle(),
+      poses: [],
     };
+    setImmediate(() => this.reset());
+  }
+
+  newSimulatorFromState() {
+    const { vehicle } = this.state;
+
+    //const topics = new EventEmitter();
+    const listeners = {};
+    const topics = {
+      on: (topic, cb) => {
+        listeners[topic] = listeners[topic] || [];
+        listeners[topic].push(cb);
+      },
+      emit: (topic, evt) => {
+        (listeners[topic] || []).forEach(cb => cb(evt));
+      },
+    };
+    this.state.robot.onInit(topics);
+    topics.on('/ego/path', path => {
+      this.setState({ path });
+    });
+
+    this.simulator = new Simulator({
+      actors: [
+        {
+          physics: {
+            name: 'bicycle',
+            lf: vehicle.L_f,
+            lr: vehicle.L_r,
+            pose: {
+              position: { x: vehicle.x, y: vehicle.y },
+              orientation: { yaw: vehicle.yaw },
+            },
+          },
+          name: 'ego',
+          listen: {
+            '/ego/controls': { set: 'controls' },
+          },
+          controller: {
+            // TODO control w code
+            type: 'bicycle',
+          }
+        },
+      ]
+    }, topics);
+
+    const count = local;
+    local++;
+    this.publish = (topic, evt) => topics.emit(topic, evt);
+    this.subscribe = (topic, cb) => topics.on(topic, cb);
+    /*const controller = new BicyclePathFollower({
+      publishControlsTopic: '/ego/controls',
+    }, topics);
+
+    this.subscribe('/ego/pose', pose => controller.on('pose', pose));
+    this.subscribe('/ego/path', path => controller.on('path', path));
+    */
+    this.subscribe('/ego/pose', ({ timestamp, pose }) => {
+      const { position, orientation } = pose;
+      console.error('count', count, position);
+      //console.error('position', position);
+      //console.error('orientation', orientation);
+      const prevPoses = this.state.poses;
+      this.setState({
+        poses: [...prevPoses, pose],
+        vehicle: {
+          ...this.state.vehicle,
+          x: position.x,
+          y: position.y,
+          yaw: orientation.yaw,
+          //v: v_next,
+        },
+      });
+    });
   }
 
   objectsFromVehicle(vehicle) {
     return [
       ...this.scenario.map.areas,
+      ...(this.state.path || []).map(({ position }, i) => ({
+        type: 'circle',
+        name: `Path Point ${i}`,
+        fillColor: '#2d2',
+        x: position.x, y: position.y,
+        radius: 0.5,
+      })),
+      ...(this.state.poses || []).map(({ position }, i) => ({
+        type: 'circle',
+        name: `Pose Point ${i}`,
+        fillColor: 'rgba(192, 96, 96, 0.6)',
+        x: position.x, y: position.y,
+        radius: 0.5,
+      })),
       {
         type: 'rect',
         fillColor: '#bb6666',
@@ -73,31 +203,20 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
   }
 
   tick(state) {
-    //console.error('state', state);
+    console.error('tick', state);
     const {
       t_0, t_prev,
       vehicle,
     } = state;
 
     let {
-      x, y, v, yaw,
+      x, y, yaw,
       L_r, L_f, width,
     } = vehicle;
 
-    const now = Date.now();
-    const t = (now - t_0) / 1000.0;
-    const dt = (now - t_prev) / 1000.0;
-
-    if (t > (this.scenario.timeout || 60)) {
-      // timeout
-      alert('Times up!');
-      this.stop();
-      return;
-    }
-
     if (this.scenario.checkGoal(state)) {
       // goal completed!
-      alert(`Goal completed in ${Math.round(t*10)/10} seconds!`);
+      alert(`Goal completed in ${Math.round(t_prev*10)/10} seconds!`);
       this.stop();
       return;
     }
@@ -105,51 +224,51 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
     const sensors = {
       vehicle,
       ...this.scenario.getSensors({
-        vehicle: { v, x, y, yaw },
+        vehicle: { x, y, yaw },
       }),
     };
 
-    const controls = state.robot.doStep(sensors);
+    const publish = (topic, evt) => {
+      this.publish(topic, evt);
+    };
+    const start = Date.now();
+    state.robot.onSensors(publish, sensors);
+    const etRobo = Date.now() - start;
 
-    const {
-      steer_angle, accel, brake
-    } = controls;
+    this.simulator.step(this.dt);
+    const etSim = Date.now() - start - etRobo;
 
-    const x_dot = v * Math.cos(yaw);
-    const y_dot = v * Math.sin(yaw);
-    const yaw_dot = v / L_r * steer_angle;
-    const v_dot = (v < 0 ? 0 : (accel || 0) - (brake || 0)) * 5.0;
-
-    // physics
-    const x_next = x + x_dot * dt;
-    const y_next = y + y_dot * dt;
-    const yaw_next = (yaw + yaw_dot * dt) % (2.0*Math.PI);
-    const dv = v_dot * dt;
-    const v_next = Math.max(0, v + dv);
-
-    setTimeout(() => {
-      this.setState({
-        t_prev: now,
-        vehicle: {
-          ...vehicle,
-          x: x_next,
-          y: y_next,
-          yaw: yaw_next,
-          v: v_next,
-        },
-      });
-    }, 50);
+    if (this.state.running) {
+      setTimeout(() => {
+        this.step();
+      }, 10);
+    }
   }
 
   stop() {
     this.setState({ running: false });
   }
 
+  getNewRobot() {
+    return evalCode(this.state.code + '; (function() { return { onInit: onInit, onSensors: onSensors } })();');
+  }
+
   reset() {
     this.scenario.reset();
+    const robot = this.getNewRobot();
+    const { vehicle } = this.state;
+
     this.setState({
+      t_0: 0,
+      t_prev: 0,
+      robot,
       vehicle: initialVehicle(),
       running: false,
+      poses: [],
+      path: [],
+    });
+    setImmediate(() => {
+      this.newSimulatorFromState();
     });
   }
 
@@ -158,24 +277,28 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
     this.reset();
   }
 
-  run() {
-    const doStep = eval(this.state.code + '; doStep');
-    const t_0 = Date.now();
-    const { vehicle } = this.state;
-
-    let t_prev = Date.now();
-
+  step() {
     this.setState({
-      t_0,
-      t_prev,
-      running: true,
-      robot: { doStep },
+      t_prev: this.state.t_prev + this.dt,
     });
   }
 
+  run() {
+    this.setState({
+      running: true,
+    });
+    setTimeout(() => this.step(), 1);
+  }
+
   componentWillUpdate(newProps, newState) {
-    if (newState.running) {
-      this.tick(newState);
+    const dt = newState.t_prev - this.state.t_prev;
+    console.error('componentWillUpdate dt', dt);
+    if (dt > 0) {
+      //this.prevUpdate = Date.now();
+      // only tick when time steps
+      setTimeout(() => {
+        this.tick(newState);
+      }, 10);
     }
   }
 
@@ -186,6 +309,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
 
   render() {
     const run = () => this.run();
+    const step = () => this.step();
     const options = {
       lineNumbers: true,
       mode: 'javascript',
@@ -203,6 +327,8 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
                     onClick={run} value="Run!">Run!</button>
             <button style={{border: '1px solid black', borderRadius: 3}}
                     onClick={() => this.stop()} value="Stop!">Stop!</button>
+            <button style={{border: '1px solid black', borderRadius: 3}}
+                    onClick={step} value="Step">Step</button>
             <button style={{border: '1px solid black', borderRadius: 3}}
                     onClick={() => this.reset()} >Reset</button>
             <button style={{border: '1px solid black', borderRadius: 3}}

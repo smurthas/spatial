@@ -28,12 +28,19 @@ export default class Slalom {
           x: 320, y: (BOX_START_Y + BOX_STOP_Y) / 2,
           length: 640, width: (BOX_STOP_Y - BOX_START_Y),
         },
-        ...this.cones.map(cone => ({
-          type: 'rect',
-          name: 'Cone 1',
+        ...this.cones.map((cone, i) => ({
+          type: 'circle',
+          name: `Cone ${i}`,
           fillColor: cone.passOn === 'left' ? '#d22' : '#22d',
           x: cone.x, y: cone.y,
-          length: 3, width: 3,
+          radius: 1,
+        })),
+        ...this.cones.map((cone, i) => ({
+          type: 'circle',
+          name: `Cone Center ${i}`,
+          fillColor: '#eee',
+          x: cone.x, y: cone.y,
+          radius: 0.3,
         })),
       ],
     };
@@ -63,7 +70,12 @@ export default class Slalom {
     if (!this.previousState) {
       this.previousState = state;
     }
-    const { x, y, v } = state.vehicle;
+    const { x, y } = state.vehicle;
+
+    const { poses } = state;
+    const dt = state.t_prev - this.previousState.t_prev;
+    const v = poses.length < 2 ?  0 :
+      poses.slice(-1)[0].position.minus(poses.slice(-2)[0].position).magnitude() / dt;
 
     this.cones.forEach((cone, i) => {
       if (this.previousState.vehicle.y < cone.y && state.vehicle.y > cone.y) {
