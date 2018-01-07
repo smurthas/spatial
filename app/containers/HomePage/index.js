@@ -63,9 +63,9 @@ function onSensors(publish, { vehicle, cones, color }) {
     return;
   }
 
-  const path = cones.map(({ x, y }) => {
+  const path = cones.map(({ x, y, passOn }) => {
     return {
-      position: { x: x + 10, y, z: 0 },
+      position: { x: x + (passOn === 'left' ? -5 : 5), y, z: 0 },
       orientation: { roll: 0, pitch: 0, yaw: 1.57 },
     };
   });
@@ -144,22 +144,10 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
       ]
     }, topics);
 
-    const count = local;
-    local++;
     this.publish = (topic, evt) => topics.emit(topic, evt);
     this.subscribe = (topic, cb) => topics.on(topic, cb);
-    /*const controller = new BicyclePathFollower({
-      publishControlsTopic: '/ego/controls',
-    }, topics);
-
-    this.subscribe('/ego/pose', pose => controller.on('pose', pose));
-    this.subscribe('/ego/path', path => controller.on('path', path));
-    */
     this.subscribe('/ego/pose', ({ timestamp, pose }) => {
       const { position, orientation } = pose;
-      console.error('count', count, position);
-      //console.error('position', position);
-      //console.error('orientation', orientation);
       const prevPoses = this.state.poses;
       this.setState({
         poses: [...prevPoses, pose],
@@ -292,7 +280,6 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
 
   componentWillUpdate(newProps, newState) {
     const dt = newState.t_prev - this.state.t_prev;
-    console.error('componentWillUpdate dt', dt);
     if (dt > 0) {
       //this.prevUpdate = Date.now();
       // only tick when time steps

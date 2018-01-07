@@ -52,8 +52,9 @@ class BicycleController {
     const yaw = Math.atan2(bisectV.y, bisectV.x);
 
     const tf = createTransform({ position: closest, orientation: { yaw }});
-    const poseInBisect = tf(this.pose).position;
-    const offset = poseInBisect.y > 0 ? -1 : 0;
+    const poseInBisect = tf(this.pose).position.y;
+    const prevInBisect = tf({ position: prev, orientation: { yaw: 0 } }).position.y;
+    const offset = poseInBisect / prevInBisect > 0 ? -1 : 0;
     return this.path.slice(i + offset, i + offset + 2);
   }
 
