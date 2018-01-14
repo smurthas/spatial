@@ -67,9 +67,10 @@ export default class WorldView extends Component {
       this.shift.x = -1.0 * (center.x - (width/this.scale/2));
       this.shift.y = -1.0 * (center.y - (height/this.scale/2));
     }
-    var ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
     objects.forEach(object => {
+      const ctx = canvas.getContext('2d');
+      ctx.save();
       if (object.type === 'rectangle') {
       } else if (object.type === 'rect') {
         this.drawRectangle({
@@ -82,6 +83,7 @@ export default class WorldView extends Component {
           context: ctx,
         });
       }
+      ctx.restore();
     });
   }
 
@@ -94,10 +96,12 @@ export default class WorldView extends Component {
   }
 
   render() {
-    return <canvas
-      style={{border: '1px solid black'}}
-      width={this.props.width}
-      height={this.props.height}
-      ref={(canvas) => { this.canvas = canvas; }} />
+    return <div>
+      <canvas
+        style={{border: '1px solid #333'}}
+        width={this.props.width}
+        height={this.props.height}
+        ref={(canvas) => { this.canvas = canvas; }} />
+    </div>
   }
 }

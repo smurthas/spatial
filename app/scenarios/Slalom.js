@@ -24,7 +24,7 @@ export default class Slalom {
         {
           type: 'rect',
           name: 'Stop Box',
-          fillColor: '#222',
+          fillColor: '#aaa',
           x: 320, y: (BOX_START_Y + BOX_STOP_Y) / 2,
           length: 640, width: (BOX_STOP_Y - BOX_START_Y),
         },
@@ -51,7 +51,7 @@ export default class Slalom {
   static info() {
     return {
       name: 'Slalom',
-      description: 'Drive to the black box and then stop the vehicle. Stay left of red cones and right of the blue ones. The vehicle is equipped with a light sensor which will result in sensors.color === \'black\' when it is over the black box',
+      description: 'Drive to the black box and then stop the vehicle. Stay left of red cones and right of the blue ones. The vehicle is equipped with a light sensor which will result in sensors.color === \'white\' when it is over the black box',
     };
   }
 
@@ -62,7 +62,7 @@ export default class Slalom {
   getSensors(state) {
     return {
       cones: this.cones,
-      color: isInBox(state.vehicle.y) ? 'black' : 'white',
+      color: isInBox(state.vehicle.y) ? 'white' : 'black',
     };
   }
 

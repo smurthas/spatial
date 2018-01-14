@@ -12,16 +12,14 @@ This is a WIP, contributions welcomed!
 TODO:
 
 * [ ] Explain topics, publish, sensors, and fns in hello world
-* [ ] Collision is failure
-* [ ] Better visualization of car for Slalom
-* [ ] Zoom, pan, recenter/follow
-* [ ] Show axes
-* [ ] Icons for buttons
-* [ ] Run + stop --> play/pause (on button)
 * [ ] Display elapsed time
 * [ ] A font
 * [ ] Flexible size map
 * [ ] Flexible size code
+* [ ] Collision is failure
+* [ ] Better visualization of car for Slalom
+* [ ] Zoom, pan, recenter/follow
+* [ ] Show axes
 * [ ] Flipside for larger map
 * [ ] Publish to domain
 * [ ] Another scenario

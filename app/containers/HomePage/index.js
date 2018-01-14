@@ -26,6 +26,19 @@ import WorldView from '../../components/WorldView';
 import CodeMirror from 'react-codemirror';
 import 'codemirror/mode/javascript/javascript';
 
+import 'font-awesome/css/font-awesome.min.css';
+import FontAwesome from 'react-fontawesome';
+import styled from 'styled-components';
+
+const ControlButton = styled.button`
+  border: none;
+  border-radius: 3px;
+  margin: 0px 4px;
+  &:focus {
+    outline:0;
+  }
+`;
+
 
 const modules = {
   'pid-path-follower': BicyclePathFollower
@@ -43,8 +56,7 @@ function evalCode(code) {
   return fn.call(evalThis);
 }
 
-const defaultCode = `
-const PIDPathFollower = this.require('pid-path-follower');
+const defaultCode = `const PIDPathFollower = this.require('pid-path-follower');
 
 function onInit(topics) {
   const pathFollower = new PIDPathFollower({
@@ -57,7 +69,7 @@ function onInit(topics) {
 
 function onSensors(publish, { vehicle, cones, color }) {
   // if over the stop box, well, stop
-  if (color === 'black') {
+  if (color === 'white') {
     publish('/ego/path', []);
     publish('/ego/controls', { theta: 0, b: 5 });
     return;
@@ -289,37 +301,44 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
     }
   }
 
+  componentDidUpdate(newProps, newState) {
+    if (newState.code !== this.state.code) {
+      this.reset();
+      return;
+    }
+  }
+
   updateCode(code) {
     this.setState({ code });
     window.localStorage.setItem('code', code);
   }
 
   render() {
-    const run = () => this.run();
+    const { running } = this.state;
+    const playPause = () => running ? this.stop() : this.run();
+    const playPauseIcon = running ? 'pause' : 'play';
+    const playPauseText = running ? 'Pause' : 'Play';
     const step = () => this.step();
+    const reset = () => this.reset();
+    const regen = () => this.regen();
     const options = {
       lineNumbers: true,
       mode: 'javascript',
+      theme: 'base16-dark',
     };
 
     const { name, description } = this.scenarioType.info();
 
     return (
-      <div>
-        <div>{name}</div>
-        <div style={{display: 'flex'}}>
-          <div style={{width: 640, flex: '1 0 1'}}>{description}</div>
+      <div style={{ padding: 5 }}>
+        <h3>{name}</h3>
+        <div style={{ display: 'flex' }}>
+          <div style={{ width: 640, flex: '1 0 1' }}>{description}</div>
           <div style={{flex: '1 0 1'}}>
-            <button style={{border: '1px solid black', borderRadius: 3}}
-                    onClick={run} value="Run!">Run!</button>
-            <button style={{border: '1px solid black', borderRadius: 3}}
-                    onClick={() => this.stop()} value="Stop!">Stop!</button>
-            <button style={{border: '1px solid black', borderRadius: 3}}
-                    onClick={step} value="Step">Step</button>
-            <button style={{border: '1px solid black', borderRadius: 3}}
-                    onClick={() => this.reset()} >Reset</button>
-            <button style={{border: '1px solid black', borderRadius: 3}}
-                    onClick={() => this.regen()} >Regen</button>
+            <ControlButton style={{width: 70}} onClick={playPause}><FontAwesome name={playPauseIcon} /> {playPauseText}</ControlButton>
+            <ControlButton onClick={step} value="Step"><FontAwesome name='step-forward' /> Step</ControlButton>
+            <ControlButton onClick={reset} ><FontAwesome name='undo' /> Reset</ControlButton>
+            <ControlButton onClick={regen} ><FontAwesome name='random' /> Regenerate</ControlButton>
           </div>
         </div>
         <div style={{display: 'flex'}}>
