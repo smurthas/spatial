@@ -13,13 +13,14 @@ TODO:
 
 * [ ] Explain topics, publish, sensors, and fns in hello world
 * [ ] Display elapsed time
-* [ ] A font
 * [ ] Flexible size map
 * [ ] Flexible size code
 * [ ] Collision is failure
 * [ ] Better visualization of car for Slalom
 * [ ] Zoom, pan, recenter/follow
 * [ ] Show axes
+* [ ] Lint
+* [ ] Tests
 * [ ] Flipside for larger map
 * [ ] Publish to domain
 * [ ] Another scenario

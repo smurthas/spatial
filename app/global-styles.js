@@ -9,7 +9,7 @@ injectGlobal`
   }
 
   body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Courier New', monospace, sans-serif;
     background: #151515;
     color: #EBEBEB;
   }
