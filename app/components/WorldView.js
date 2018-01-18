@@ -1,5 +1,9 @@
 import React from 'react';
 import { Component } from 'react';
+import styled from 'styled-components';
+
+import { Position } from './TextDisplay';
+
 
 const rotatePoint = (x0, y0, x1, y1, angle = 0) => {
   const dx = x1 - x0;
@@ -16,21 +20,42 @@ const rotatePoint = (x0, y0, x1, y1, angle = 0) => {
   };
 };
 
+const AxesLabel = styled.div`
+  font-size: 8px;
+  position: absolute;
+`;
+
+
 export default class WorldView extends Component {
   constructor() {
     super();
     this.scale = 5.0;
-    this.shift = { x: 0, y: -50 };
+    this.shift = { x: 0, y: 0 };
+    this.state = {
+      showHUD: false,
+      mouse: { x: 0, y: 0 },
+    }
   }
 
   worldToCanvas({x, y}) {
     const scale = this.scale;
     const shiftX = this.shift.x;
     const shiftY = this.shift.y;
-    const { width, height } = this.canvas;
+    const { height } = this.canvas;
     return {
       x: scale * (x+shiftX),
       y: height - (scale * (y+shiftY)),
+    };
+  }
+
+  canvasToWorld({x, y}) {
+    const { height } = this.canvas;
+    const scale = this.scale;
+    const shiftX = this.shift.x;
+    const shiftY = this.shift.y;
+    return {
+      x: x / scale - shiftX,
+      y: (height - y) / scale - shiftY,
     };
   }
 
@@ -60,14 +85,35 @@ export default class WorldView extends Component {
     context.fill();
   };
 
-  drawState(objects=[], center) {
+  drawLine({ ctx, x1, y1, x2, y2, color }) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  drawAxes(options) {
+    const { xStrokeStyle='#F00', yStrokeStyle='#0F0' } = options || {};
     const { canvas } = this;
-    const { width, height } = canvas;
+    const { height } = canvas;
+    const ctx = canvas.getContext('2d');
+    const x0 = 10;
+    const y0 = height - 10;
+    const l = 20;
+    this.drawLine({ ctx, x1: x0 + l, y1: y0, x2: x0, y2: y0, color: '#F00' });
+    this.drawLine({ ctx, x1: x0, y1: y0, x2: x0, y2: y0 - l, color: '#0F0' });
+  }
+
+  drawState({ width, objects=[], center }) {
+    this.canvas.height = this.div.clientHeight;
+    const height = this.canvas.height;
+    const { canvas } = this;
     if (center) {
       this.shift.x = -1.0 * (center.x - (width/this.scale/2));
       this.shift.y = -1.0 * (center.y - (height/this.scale/2));
     }
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d').clearRect(0, 0, width, height);
     objects.forEach(object => {
       const ctx = canvas.getContext('2d');
       ctx.save();
@@ -85,23 +131,57 @@ export default class WorldView extends Component {
       }
       ctx.restore();
     });
+    this.drawAxes({});
   }
 
-  componentWillUpdate(newProps, newState) {
-    this.drawState(newProps.objects, newProps.center);
+  componentDidUpdate(prevProps, prevState) {
+    this.drawState(this.props);
   }
 
   componentDidMount() {
-    this.drawState(this.props.objects);
+    this.drawState(this.props);
+     window.addEventListener('resize', () => this.drawState(this.props));
   }
 
   render() {
-    return <div>
-      <canvas
-        style={{border: '1px solid #333'}}
-        width={this.props.width}
-        height={this.props.height}
-        ref={(canvas) => { this.canvas = canvas; }} />
-    </div>
+    const { showHUD } = this.state;
+    const setShowHUD = () => this.setState({ showHUD: true });
+    const setHideHUD = () => this.setState({ showHUD: false });
+    const { pose } = this.props;
+    const setMouseLocation = ({ clientX, clientY }) => {
+      const { top, left } = this.canvas.getBoundingClientRect();
+      const x = clientX - left - 0;
+      const y = clientY - top;
+      const mouse = this.canvasToWorld({ x, y });
+      this.setState({ mouse });
+    }
+
+    return (
+      <div
+        ref={ div => this.div = div }
+        style={{ display: 'flex', flexFlow: 'column', height: '100%'}}
+        onMouseEnter={ setShowHUD }
+        onMouseOver={ setShowHUD }
+        onMouseLeave={ setHideHUD }
+        onMouseOut={ setHideHUD }
+        onMouseMove={ setMouseLocation }
+      >
+        <div
+          style={{
+            display: showHUD ? 'block': 'none',
+            position: 'absolute',
+            bottom: 2,
+            right: 10,
+          }}
+        >
+          <Position x={this.state.mouse.x} y={this.state.mouse.y} />
+        </div>
+        <AxesLabel style={{ bottom: 1, left: 32 }}>x</AxesLabel>
+        <AxesLabel style={{ bottom: 29, left: 7 }}>y</AxesLabel>
+        <canvas
+          width={this.props.width}
+          ref={(canvas) => { this.canvas = canvas; }} />
+      </div>
+    )
   }
 }

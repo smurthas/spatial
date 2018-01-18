@@ -11,14 +11,16 @@ This is a WIP, contributions welcomed!
 
 TODO:
 
-* [ ] Explain topics, publish, sensors, and fns in hello world
-* [ ] Display elapsed time
-* [ ] Flexible size map
-* [ ] Flexible size code
+* […] Explain topics, publish, sensors, and fns in hello worlds
+  * [ ] Accelerate
+  * [ ] Steer
+  * [ ] Brake
+* [ ] → "level"
+* [ ] Name + description to modal on new level
+* [ ] Flow from one level to next (urls per level)
 * [ ] Collision is failure
-* [ ] Better visualization of car for Slalom
+* [ ] Better visualization of car, cones, course for Slalom
 * [ ] Zoom, pan, recenter/follow
-* [ ] Show axes
 * [ ] Lint
 * [ ] Tests
 * [ ] Flipside for larger map
