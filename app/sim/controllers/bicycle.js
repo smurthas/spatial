@@ -2,7 +2,6 @@ const createTransform = require('../transform');
 
 const PID = require('../PID');
 const Pose = require('../Pose');
-const { round } = require('../utils');
 
 class BicycleController {
   constructor(options, topics) {
@@ -12,12 +11,14 @@ class BicycleController {
   }
 
   on(type, evt) {
-    switch(type) {
+    switch (type) {
       case 'path':
         this.onPath(evt);
         break;
       case 'pose':
         this.onPose(evt);
+        break;
+      default:
         break;
     }
   }
@@ -34,14 +35,12 @@ class BicycleController {
     }, { distance: Infinity, i: -1 });
 
     if (closestPointInfo.i < 0) {
-      return;
+      return null;
     }
     const { i } = closestPointInfo;
     if (i === 0) {
       return this.path.slice(0, 2);
     }
-    const prevI = i - 1;
-    const nextI = i + 1;
 
     const prev = new Pose(this.path[i - 1]).position;
     const closest = new Pose(this.path[i]).position;
@@ -51,7 +50,7 @@ class BicycleController {
     const bisectV = v0.plus(v1).normalize();
     const yaw = Math.atan2(bisectV.y, bisectV.x);
 
-    const tf = createTransform({ position: closest, orientation: { yaw }});
+    const tf = createTransform({ position: closest, orientation: { yaw } });
     const poseInBisect = tf(this.pose).position.y;
     const prevInBisect = tf({ position: prev, orientation: { yaw: 0 } }).position.y;
     const offset = poseInBisect / prevInBisect > 0 ? -1 : 0;
@@ -64,17 +63,15 @@ class BicycleController {
       return;
     }
 
-    const tf = createTransform(this.pose)
-    const localPath = this.path.map(tf);
-    const [ prev, next] = this.getNextTwoWaypoints();
+    const [prev, next] = this.getNextTwoWaypoints();
 
     const dy = next.position.y - prev.position.y;
     const dx = next.position.x - prev.position.x;
     const yaw = Math.atan2(dy, dx);
-    const tfPrev = createTransform({ ...prev, orientation: { ... prev.orientation, yaw }});
+    const tfPrev = createTransform({ ...prev, orientation: { ...prev.orientation, yaw } });
     const poseInPathFrame = tfPrev(this.pose);
     const CTE = poseInPathFrame.position.y;
-    let theta =  this.pid.value(CTE);
+    let theta = this.pid.value(CTE);
     if (theta > 0.3) {
       theta = 0.3;
     } else if (theta < -0.3) {
@@ -89,7 +86,6 @@ class BicycleController {
 
   onPath(path) {
     this.path = path;
-    //this.computeControls();
   }
 
   onPose({ timestamp, pose }) {

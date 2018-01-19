@@ -12,7 +12,7 @@ class Rotator {
       roll: this.roll + other.roll,
       pitch: this.pitch + other.pitch,
       yaw: this.yaw + other.yaw,
-    })
+    });
   }
 
   minus(other) {

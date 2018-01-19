@@ -15,6 +15,7 @@ TODO:
   * [ ] Accelerate
   * [ ] Steer
   * [ ] Brake
+* [ ] Holonomic starter level
 * [ ] → "level"
 * [ ] Name + description to modal on new level
 * [ ] Flow from one level to next (urls per level)

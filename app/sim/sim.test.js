@@ -7,31 +7,23 @@ const Pose = require('./Pose');
 const Simulator = require('./sim');
 const tolerant = (obj, esp = 0.001) => {
   const ret = {};
-  for (let i in obj) {
-    if (typeof obj[i] === 'number') {
-      ret[i] = Math.round(obj[i]/esp) * esp;
+  Object.keys(obj).forEach(key => {
+    if (typeof obj[key] === 'number') {
+      ret[key] = Math.round(obj[key]/esp) * esp;
     } else {
-      ret[i] = tolerant(obj[i]);
+      ret[key] = tolerant(obj[key]);
     }
-  }
+  });
   return ret;
 };
 
-const deepNearlyEqual = (obj1, obj2, esp) => {
-  return assert.deepEqual(tolerant(obj1, esp), tolerant(obj2, esp));
-};
+const deepNearlyEqual = (obj1, obj2, esp) => assert.deepEqual(tolerant(obj1, esp), tolerant(obj2, esp));
 
-const velocityFrom = velocity => {
+const velocityFrom = (velocity) => {
   const { linear, angular } = velocity || {};
   return {
-    linear: {
-      x: 0, y: 0, z: 0,
-      ...linear,
-    },
-    angular: {
-      roll: 0, pitch: 0, yaw: 0,
-      ...angular,
-    },
+    linear: { x: 0, y: 0, z: 0, ...linear },
+    angular: { roll: 0, pitch: 0, yaw: 0, ...angular },
   };
 };
 
@@ -51,7 +43,7 @@ describe('sim', () => {
           physics: {
             name: 'bicycle',
             lf: 2,
-            lr: 2
+            lr: 2,
           },
           name: 'ego',
           listen: {
@@ -59,7 +51,7 @@ describe('sim', () => {
           },
           controller: {
             type: 'bicycle',
-          }
+          },
         },
         {
           physics: {
@@ -73,10 +65,10 @@ describe('sim', () => {
 
     const squarePath = [
       new Pose(),
-      new Pose({ position: { x: 1 }}),
-      new Pose({ position: { x: 2, y: 0.1 }}),
-      new Pose({ position: { x: 3, y: 0.3 }}),
-      new Pose({ position: { x: 4, y: 0.5 }}),
+      new Pose({ position: { x: 1 } }),
+      new Pose({ position: { x: 2, y: 0.1 } }),
+      new Pose({ position: { x: 3, y: 0.3 } }),
+      new Pose({ position: { x: 4, y: 0.5 } }),
     ];
 
     const controller = new BicyclePathFollower({
@@ -98,7 +90,7 @@ describe('sim', () => {
     sim.step(0.1);
     assert.deepEqual(sim.actors[0].physics.pose, originPose);
     assert.deepEqual(sim.actors[0].physics.velocity, velocityFrom({
-      linear: {  x: 0.1 },
+      linear: { x: 0.1 },
     }));
 
     assert.deepEqual(sim.actors[1].physics.pose, conePose);
@@ -106,7 +98,7 @@ describe('sim', () => {
 
     sim.step(0.05);
     deepNearlyEqual(sim.actors[0].physics.pose, new Pose({
-      position: { x: 0.005 }
+      position: { x: 0.005 },
     }));
     deepNearlyEqual(sim.actors[0].physics.velocity, velocityFrom({
       linear: { x: 0.15 },
@@ -128,7 +120,7 @@ describe('sim', () => {
 
     assert.deepEqual(sim.actors[1].physics.pose, conePose);
     assert.deepEqual(sim.actors[1].physics.velocity, zeroVelocity);
-    for ( let i = 0; i < 100; i++) {
+    for (let i = 0; i < 100; i++) {
       sim.step(0.1);
     }
   });

@@ -36,9 +36,7 @@ function onSensors(publish, { vehicle, cones, color }) {
 const BOX_START_Y = 250;
 const BOX_STOP_Y = 350;
 
-const isInBox = y => {
-  return y > BOX_START_Y && y < BOX_STOP_Y;
-};
+const isInBox = y => y > BOX_START_Y && y < BOX_STOP_Y;
 
 const coneFuzz = (scale = 15) => (Math.random() - 0.5) * scale;
 
@@ -48,7 +46,7 @@ export default class Slalom {
     const x = startX;
     let y = startY;
     let left;
-    this.cones = Array.apply(null, {length: cones}).map((a, i) => {
+    this.cones = ' '.repeat(cones).split('').map(() => {
       y += dy + coneFuzz(dy);
       left = !left;
       return { x, y, passOn: left ? 'left' : 'right' };
@@ -60,21 +58,25 @@ export default class Slalom {
           type: 'rect',
           name: 'Stop Box',
           fillColor: '#aaa',
-          x: 320, y: (BOX_START_Y + BOX_STOP_Y) / 2,
-          length: 640, width: (BOX_STOP_Y - BOX_START_Y),
+          x: 320,
+          y: (BOX_START_Y + BOX_STOP_Y) / 2,
+          length: 640,
+          width: (BOX_STOP_Y - BOX_START_Y),
         },
         ...this.cones.map((cone, i) => ({
           type: 'circle',
           name: `Cone ${i}`,
           fillColor: cone.passOn === 'left' ? '#d22' : '#22d',
-          x: cone.x, y: cone.y,
+          x: cone.x,
+          y: cone.y,
           radius: 1,
         })),
         ...this.cones.map((cone, i) => ({
           type: 'circle',
           name: `Cone Center ${i}`,
           fillColor: '#eee',
-          x: cone.x, y: cone.y,
+          x: cone.x,
+          y: cone.y,
           radius: 0.3,
         })),
       ],
@@ -112,7 +114,7 @@ export default class Slalom {
 
     const { poses } = state;
     const dt = t_prev - this.previousState.t_prev;
-    const v = poses.length < 2 ?  0 :
+    const v = poses.length < 2 ? 0 :
       poses.slice(-1)[0].position.minus(poses.slice(-2)[0].position).magnitude() / dt;
 
     this.cones.forEach((cone, i) => {
@@ -140,7 +142,7 @@ export default class Slalom {
       if (!stoppedInBox) {
         fail = `drive around the cones and stop in the box in under ${this.timeout} seconds`;
       } else if (!passedAllCones) {
-        fail = `make sure to drive left of the red cones and right of the blue ones!`;
+        fail = 'make sure to drive left of the red cones and right of the blue ones!';
       }
     }
     return {

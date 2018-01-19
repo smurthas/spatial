@@ -1,6 +1,6 @@
-import React from 'react';
-import { Component } from 'react';
+import React, { Component } from 'react';
 import styled from 'styled-components';
+import PropTypes from 'prop-types';
 
 import { Position } from './TextDisplay';
 
@@ -34,30 +34,18 @@ export default class WorldView extends Component {
     this.state = {
       showHUD: false,
       mouse: { x: 0, y: 0 },
-    }
-  }
-
-  worldToCanvas({x, y}) {
-    const scale = this.scale;
-    const shiftX = this.shift.x;
-    const shiftY = this.shift.y;
-    const { height } = this.canvas;
-    return {
-      x: scale * (x+shiftX),
-      y: height - (scale * (y+shiftY)),
     };
   }
 
-  canvasToWorld({x, y}) {
-    const { height } = this.canvas;
-    const scale = this.scale;
-    const shiftX = this.shift.x;
-    const shiftY = this.shift.y;
-    return {
-      x: x / scale - shiftX,
-      y: (height - y) / scale - shiftY,
-    };
+  componentDidMount() {
+    this.drawState(this.props);
+    window.addEventListener('resize', () => this.drawState(this.props));
   }
+
+  componentDidUpdate() {
+    this.drawState(this.props);
+  }
+
 
   drawRectangle({ context, fillColor, x, y, width, length, heading }) {
     const l2 = length/2;
@@ -74,7 +62,7 @@ export default class WorldView extends Component {
     context.lineTo(p4.x, p4.y);
     context.closePath();
     context.fill();
-  };
+  }
 
   drawCircle({ context, fillColor, x, y, radius }) {
     context.fillStyle = fillColor;
@@ -83,7 +71,7 @@ export default class WorldView extends Component {
     context.beginPath();
     context.arc(ctr.x, ctr.y, radCanvas, 0, Math.PI * 2);
     context.fill();
-  };
+  }
 
   drawLine({ ctx, x1, y1, x2, y2, color }) {
     ctx.beginPath();
@@ -93,8 +81,7 @@ export default class WorldView extends Component {
     ctx.stroke();
   }
 
-  drawAxes(options) {
-    const { xStrokeStyle='#F00', yStrokeStyle='#0F0' } = options || {};
+  drawAxes() {
     const { canvas } = this;
     const { height } = canvas;
     const ctx = canvas.getContext('2d');
@@ -117,8 +104,7 @@ export default class WorldView extends Component {
     objects.forEach(object => {
       const ctx = canvas.getContext('2d');
       ctx.save();
-      if (object.type === 'rectangle') {
-      } else if (object.type === 'rect') {
+      if (object.type === 'rect') {
         this.drawRectangle({
           ...object,
           context: ctx,
@@ -131,40 +117,53 @@ export default class WorldView extends Component {
       }
       ctx.restore();
     });
-    this.drawAxes({});
+    this.drawAxes();
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    this.drawState(this.props);
+  worldToCanvas({ x, y }) {
+    const scale = this.scale;
+    const shiftX = this.shift.x;
+    const shiftY = this.shift.y;
+    const { height } = this.canvas;
+    return {
+      x: scale * (x+shiftX),
+      y: height - (scale * (y+shiftY)),
+    };
   }
 
-  componentDidMount() {
-    this.drawState(this.props);
-     window.addEventListener('resize', () => this.drawState(this.props));
+  canvasToWorld({ x, y }) {
+    const { height } = this.canvas;
+    const scale = this.scale;
+    const shiftX = this.shift.x;
+    const shiftY = this.shift.y;
+    return {
+      x: x / scale - shiftX,
+      y: (height - y) / scale - shiftY,
+    };
   }
+
 
   render() {
     const { showHUD } = this.state;
     const setShowHUD = () => this.setState({ showHUD: true });
     const setHideHUD = () => this.setState({ showHUD: false });
-    const { pose } = this.props;
     const setMouseLocation = ({ clientX, clientY }) => {
       const { top, left } = this.canvas.getBoundingClientRect();
       const x = clientX - left - 0;
       const y = clientY - top;
       const mouse = this.canvasToWorld({ x, y });
       this.setState({ mouse });
-    }
+    };
 
     return (
       <div
-        ref={ div => this.div = div }
-        style={{ display: 'flex', flexFlow: 'column', height: '100%'}}
-        onMouseEnter={ setShowHUD }
-        onMouseOver={ setShowHUD }
-        onMouseLeave={ setHideHUD }
-        onMouseOut={ setHideHUD }
-        onMouseMove={ setMouseLocation }
+        ref={div => { this.div = div; }}
+        style={{ display: 'flex', flexFlow: 'column', height: '100%' }}
+        onMouseEnter={setShowHUD}
+        onMouseOver={setShowHUD}
+        onMouseLeave={setHideHUD}
+        onMouseOut={setHideHUD}
+        onMouseMove={setMouseLocation}
       >
         <div
           style={{
@@ -180,8 +179,14 @@ export default class WorldView extends Component {
         <AxesLabel style={{ bottom: 29, left: 7 }}>y</AxesLabel>
         <canvas
           width={this.props.width}
-          ref={(canvas) => { this.canvas = canvas; }} />
+          ref={canvas => { this.canvas = canvas; }}
+        />
       </div>
-    )
+    );
   }
 }
+
+WorldView.propTypes = {
+  width: PropTypes.number.isRequired,
+};
+

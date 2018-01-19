@@ -8,13 +8,13 @@ const createTransform = (tf) => {
     const ty = pose.position.y - tfy;
     const cos = Math.cos(tfyaw);
     const sin = Math.sin(tfyaw);
-    const x =  cos * tx - sin * ty;
-    const y =  cos * ty + sin * tx;
+    const x = cos * tx - sin * ty;
+    const y = cos * ty + sin * tx;
     const yaw = pose.orientation.yaw + tfyaw;
     return {
       position: { ...pose.position, x, y },
       orientation: { ...pose.orientation, yaw },
-    }
+    };
   };
 };
 

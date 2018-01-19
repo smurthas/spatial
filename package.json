@@ -102,10 +102,7 @@
       }
     },
     "rules": {
-      "arrow-parens": [
-        "error",
-        "always"
-      ],
+      "arrow-parens": 0,
       "arrow-body-style": [
         2,
         "as-needed"
@@ -139,6 +136,11 @@
       "newline-per-chained-call": 0,
       "no-confusing-arrow": 0,
       "no-console": 1,
+      "no-mixed-operators": 0,
+      "no-plusplus": [
+        "error",
+        { "allowForLoopAfterthoughts": true }
+      ],
       "no-use-before-define": 0,
       "prefer-template": 2,
       "class-methods-use-this": 0,
@@ -154,6 +156,7 @@
       "redux-saga/no-yield-in-race": 2,
       "redux-saga/yield-effects": 2,
       "require-yield": 0,
+      "space-infix-ops": 0,
       "import/no-webpack-loader-syntax": 0
     },
     "settings": {

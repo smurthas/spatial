@@ -29,6 +29,6 @@ class Pose {
   negative() {
     return this.scale(-1.0);
   }
-};
+}
 
 module.exports = Pose;

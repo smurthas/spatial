@@ -1,27 +1,27 @@
 class PID {
   constructor({ p, i, d }) {
     this.coeffs = { p, i, d };
-    this.prev_p = null;
-    this.i_sum = 0;
+    this.prevP = null;
+    this.iSum = 0;
   }
 
   value(p, dt = 1) {
-    this.i_sum += p;
+    this.iSum += p;
 
-    const compute = this.prev_p !== null;
-    const d_val = (p - this.prev_p) * dt;
-    this.prev_p = p;
+    const compute = this.prevP !== null;
+    const dVal = (p - this.prevP) * dt;
+    this.prevP = p;
 
     if (!compute) {
       return 0;
     }
 
-    const p_output = this.coeffs.p * p;
-    const i_output = this.coeffs.i * this.i_sum;
-    const d_output = this.coeffs.d * d_val;
+    const pOutput = this.coeffs.p * p;
+    const iOutput = this.coeffs.i * this.iSum;
+    const dOutput = this.coeffs.d * dVal;
 
-    return p_output + i_output + d_output;
+    return pOutput + iOutput + dOutput;
   }
-};
+}
 
 module.exports = PID;

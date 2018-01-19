@@ -30,7 +30,7 @@ class Vector {
   }
 
   magnitude() {
-    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+    return Math.sqrt(this.x**2 + this.y**2 + this.z**2);
   }
 
   normalize() {

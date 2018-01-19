@@ -1,5 +1,3 @@
-import React from 'react';
-import { Component } from 'react';
 import styled from 'styled-components';
 
 const BaseButton = styled.button`
@@ -18,7 +16,6 @@ const BaseButton = styled.button`
 `;
 
 export {
-  BaseButton
+  BaseButton,
 };
-
 

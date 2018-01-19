@@ -54,8 +54,10 @@ export default class HelloTopics {
           type: 'rect',
           name: 'Stop Box',
           fillColor: '#eee',
-          x: startX, y: boxY,
-          length: 64, width: boxWidth,
+          x: startX,
+          y: boxY,
+          length: 64,
+          width: boxWidth,
         },
       ],
     };
@@ -74,7 +76,7 @@ export default class HelloTopics {
   reset() {
   }
 
-  getSensors(state) {
+  getSensors() {
     return {
       color: 'black',
     };
