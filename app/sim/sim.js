@@ -1,10 +1,11 @@
 
-const physicsModels = {};
+const BicycleModel = require('./physics-models/bicycle');
 
-const loadPhysicsModel = name => {
-  physicsModels[name] = require(__dirname + '/physics-models/' + name);
-  return physicsModels[name];
+const physicsModels = {
+  bicycle: BicycleModel,
 };
+
+const loadPhysicsModel = name => physicsModels[name];
 
 
 class Actor {

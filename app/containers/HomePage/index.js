@@ -86,7 +86,7 @@ function evalCode(code) {
     require: (mod) => modules[mod],
   };
   function fn() {
-    return eval(`console.log("this:", this); ${code}`);
+    return eval(`console.log("this:", this); ${code}`); /* eslint no-eval: 0 */
   }
   return fn.call(evalThis);
 }
@@ -105,14 +105,14 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
   constructor() {
     super();
     this.dt = 0.1;
-    this.scenarioType = HelloTopics;
-    // this.scenarioType = Slalom;
-    // this.scenarioType = DriveToBox;
-    const { name, defaultCode } = this.scenarioType.info();
+    this.ScenarioType = HelloTopics;
+    // this.ScenarioType = Slalom;
+    // this.ScenarioType = DriveToBox;
+    const { name, defaultCode } = this.ScenarioType.info();
     const code = window.localStorage.getItem(`${name}:code`) || defaultCode;
 
 
-    this.scenario = new this.scenarioType();
+    this.scenario = new this.ScenarioType();
     this.state = {
       splitWidth: DEFAULT_SPLIT_WIDTH,
       code,
@@ -123,7 +123,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
   }
 
   componentWillUpdate(newProps, newState) {
-    const dt = newState.t_prev - this.state.t_prev;
+    const dt = newState.tPrev - this.state.tPrev;
     if (dt > 0) {
       // this.prevUpdate = Date.now();
       // only tick when time steps
@@ -237,18 +237,18 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
 
   tick(state) {
     // console.error('tick', state);
-    const { t_prev, vehicle } = state;
+    const { tPrev, vehicle } = state;
     const { x, y, yaw } = vehicle;
 
     const { pass=false, fail=false } = this.scenario.checkGoal(state) || {};
     if (pass) {
       // goal completed!
-      alert(`Goal completed in ${Math.round(t_prev*10)/10} seconds!`);
+      alert(`Goal completed in ${Math.round(tPrev*10)/10} seconds!`); /* eslint no-alert: 0 */
       this.stop();
       return;
     } else if (fail) {
       // goal completed!
-      alert(`Failed to complete the goal: ${fail}`);
+      alert(`Failed to complete the goal: ${fail}`); /* eslint no-alert: 0 */
       this.stop();
       return;
     }
@@ -284,7 +284,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
 
     this.setState({
       t_0: 0,
-      t_prev: 0,
+      tPrev: 0,
       robot,
       vehicle: initialVehicle(),
       running: false,
@@ -297,13 +297,13 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
   }
 
   regen() {
-    this.scenario = new this.scenarioType();
+    this.scenario = new this.ScenarioType();
     this.reset();
   }
 
   step(running) {
     this.setState({
-      t_prev: this.state.t_prev + this.dt,
+      tPrev: this.state.tPrev + this.dt,
       running,
     });
   }
@@ -337,7 +337,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
       lineWrapping: true,
     };
 
-    const time = pprintTime(this.state.t_prev - this.state.t_0);
+    const time = pprintTime(this.state.tPrev - this.state.t_0);
     return (
       <div style={{ height: '100%' }}>
         <PageHeader>
@@ -370,7 +370,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
           />
           <div style={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
             <div style={{ flex: '0 1 auto', padding: 10 }}>
-              <ScenarioInfo info={this.scenarioType.info()} />
+              <ScenarioInfo info={this.ScenarioType.info()} />
             </div>
             <div style={{ marginLeft: 5, flex: '1 1 auto', height: '100%', overflowY: 'scroll' }}>
               <CodeMirror

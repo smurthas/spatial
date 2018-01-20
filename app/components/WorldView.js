@@ -47,10 +47,9 @@ export default class WorldView extends Component {
   }
 
 
-  drawRectangle({ context, fillColor, x, y, width, length, heading }) {
+  drawRectangle({ context, x, y, width, length, heading }) {
     const l2 = length/2;
     const w2 = width/2;
-    context.fillStyle = fillColor;
     context.beginPath();
     const p1 = this.worldToCanvas(rotatePoint(x, y, x + l2, y + w2, heading));
     const p2 = this.worldToCanvas(rotatePoint(x, y, x - l2, y + w2, heading));
@@ -64,8 +63,7 @@ export default class WorldView extends Component {
     context.fill();
   }
 
-  drawCircle({ context, fillColor, x, y, radius }) {
-    context.fillStyle = fillColor;
+  drawCircle({ context, x, y, radius }) {
     const ctr = this.worldToCanvas({ x, y });
     const radCanvas = radius * this.scale;
     context.beginPath();
@@ -73,9 +71,8 @@ export default class WorldView extends Component {
     context.fill();
   }
 
-  drawLine({ ctx, x1, y1, x2, y2, color }) {
+  drawLine({ ctx, x1, y1, x2, y2 }) {
     ctx.beginPath();
-    ctx.strokeStyle = color;
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
@@ -88,8 +85,10 @@ export default class WorldView extends Component {
     const x0 = 10;
     const y0 = height - 10;
     const l = 20;
-    this.drawLine({ ctx, x1: x0 + l, y1: y0, x2: x0, y2: y0, color: '#F00' });
-    this.drawLine({ ctx, x1: x0, y1: y0, x2: x0, y2: y0 - l, color: '#0F0' });
+    ctx.strokeStyle = '#F00';
+    this.drawLine({ ctx, x1: x0 + l, y1: y0, x2: x0, y2: y0 });
+    ctx.strokeStyle = '#0F0';
+    this.drawLine({ ctx, x1: x0, y1: y0, x2: x0, y2: y0 - l });
   }
 
   drawState({ width, objects=[], center }) {
@@ -104,6 +103,9 @@ export default class WorldView extends Component {
     objects.forEach(object => {
       const ctx = canvas.getContext('2d');
       ctx.save();
+      if (object.fillColor) {
+        ctx.fillStyle = object.fillColor;
+      }
       if (object.type === 'rect') {
         this.drawRectangle({
           ...object,
@@ -161,8 +163,10 @@ export default class WorldView extends Component {
         style={{ display: 'flex', flexFlow: 'column', height: '100%' }}
         onMouseEnter={setShowHUD}
         onMouseOver={setShowHUD}
+        onFocus={setShowHUD}
         onMouseLeave={setHideHUD}
         onMouseOut={setHideHUD}
+        onBlur={setHideHUD}
         onMouseMove={setMouseLocation}
       >
         <div

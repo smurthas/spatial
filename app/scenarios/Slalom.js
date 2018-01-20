@@ -109,11 +109,11 @@ export default class Slalom {
     if (!this.previousState) {
       this.previousState = state;
     }
-    const { vehicle, t_prev } = state;
+    const { vehicle, tPrev } = state;
     const { x, y } = vehicle;
 
     const { poses } = state;
-    const dt = t_prev - this.previousState.t_prev;
+    const dt = tPrev - this.previousState.tPrev;
     const v = poses.length < 2 ? 0 :
       poses.slice(-1)[0].position.minus(poses.slice(-2)[0].position).magnitude() / dt;
 
@@ -131,7 +131,7 @@ export default class Slalom {
 
     const conesPassedCount = Object.keys(this.conesPassed).length;
 
-    const timedout = t_prev > this.timeout; // TODO: make non magic
+    const timedout = tPrev > this.timeout; // TODO: make non magic
     const inBox = y > BOX_START_Y && y < BOX_STOP_Y;
     const stopped = Math.abs(v) < 0.05;
     const stoppedInBox = inBox && stopped;

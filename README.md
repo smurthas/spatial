@@ -22,7 +22,6 @@ TODO:
 * [ ] Collision is failure
 * [ ] Better visualization of car, cones, course for Slalom
 * [ ] Zoom, pan, recenter/follow
-* [ ] Lint
 * [ ] Tests
 * [ ] Flipside for larger map
 * [ ] Publish to domain
