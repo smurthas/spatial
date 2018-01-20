@@ -11,16 +11,20 @@ This is a WIP, contributions welcomed!
 
 TODO:
 
-* […] Explain topics, publish, sensors, and fns in hello worlds
+* [ ] Explain topics, publish, sensors, and fns in hello worlds
   * [ ] Accelerate
   * [ ] Steer
   * [ ] Brake
 * [ ] Holonomic starter level
 * [ ] → "level"
-* [ ] Name + description to modal on new level
+* [x] Name + description to modal on new level
+* [ ] Better top-down car
+* [ ] Docs for topics, onInit
+* [ ] Move out of onInit?
+* [ ] Remove onSensors (in favor of msgs)
 * [ ] Flow from one level to next (urls per level)
 * [ ] Collision is failure
-* [ ] Better visualization of car, cones, course for Slalom
+* [ ] Better visualization of cones and course for Slalom
 * [ ] Zoom, pan, recenter/follow
 * [ ] Tests
 * [ ] Flipside for larger map

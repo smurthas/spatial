@@ -36,7 +36,7 @@ import BicyclePathFollower from '../../sim/controllers/bicycle';
 import HelloTopics from '../../scenarios/HelloTopics';
 
 import WorldView from '../../components/WorldView';
-import ScenarioInfo from '../../components/ScenarioInfo';
+import LevelModal from '../../components/LevelModal';
 import { BaseButton } from '../../components/Buttons';
 import { Pose } from '../../components/TextDisplay';
 
@@ -118,6 +118,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
       code,
       vehicle: initialVehicle(),
       poses: [],
+      showLevelInfo: true,
     };
     setImmediate(() => this.reset());
   }
@@ -325,7 +326,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
     const { x, y, yaw } = vehicle;
     const playPause = () => running ? this.stop() : this.run();
     const playPauseIcon = running ? faPause : faPlay;
-    const playPauseText = running ? 'Pause' : 'Play';
+    const playPauseText = running ? 'Pause' : 'Start';
     const step = () => this.step();
     const reset = () => this.reset();
     const regen = () => this.regen();
@@ -337,9 +338,16 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
       lineWrapping: true,
     };
 
+    const { name, description } = this.ScenarioType.info();
     const time = pprintTime(this.state.tPrev - this.state.t_0);
     return (
       <div style={{ height: '100%' }}>
+        <LevelModal
+          show={this.state.showLevelInfo}
+          name={name}
+          description={description}
+          onDone={() => this.setState({ showLevelInfo: false })}
+        />
         <PageHeader>
           <Logo>[∂λ]</Logo>
           {/* '∞Ω' */}
@@ -370,7 +378,8 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
           />
           <div style={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
             <div style={{ flex: '0 1 auto', padding: 10 }}>
-              <ScenarioInfo info={this.ScenarioType.info()} />
+              <span style={{ fontWeight: 'bold' }}>{name}</span>
+              <BaseButton onClick={() => this.setState({ showLevelInfo: true })}> show info </BaseButton>
             </div>
             <div style={{ marginLeft: 5, flex: '1 1 auto', height: '100%', overflowY: 'scroll' }}>
               <CodeMirror

@@ -9,7 +9,7 @@ injectGlobal`
     overflow: hidden;
   }
 
-  body {
+   body, .modalMarkdown>p {
     font-family: 'Courier New', monospace, sans-serif;
     background: #151515;
     color: #EBEBEB;

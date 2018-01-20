@@ -1,39 +1,20 @@
 
 const defaultCode =`
-// onInit will be called when the simulation starts (i.e. when you
-// hit Play). The topics object has two functions:
-
-// topics.on(string: topic, function: callback):
-//     subscribes to a topic and calls the callback
-//     function when a message is published
-//
-// topics.emit(string: topic, object: message):
-//     publishes a message on a topic
+// onInit will be called when you hit Play.
+// The topics object is used to send and receive messages.
 function onInit(topics) {
-  // first, we subscribe to the /ego/pose topic, which will call our
-  // callback function whenever the car moves (the car is called "ego"
-  // by convention and pose is its combined position and orientation)
+  // first, list to the /ego/pose topic, which will be
+  // sent whenever the car moves. (the car is called "ego"
+  // and pose its combined position and orientation)
   topics.on('/ego/pose', pose => {
     // TODO: set the acceleration value of the control message
     const controls = {
-      // the forward acceleration of the vehicle
-      // Set this to > 0 to move the vehicle forward
-      // A value > 3 is equivalent to flooring it!
-      a: 0.2,
-
-      // the braking acceleration of the vehicle
-      // Set this to > 0 to slow the vehicle down
-      b: 0,
-
-      // the angle of the steering wheel
-      // > 0: turn left
-      // < 0: turn right
-      // = 0: drive straight
-      theta: 0,
+      a: 0.2, // acceleration of the car
+      b: 0, // braking of the car
+      theta: 0, // steering angle, < 0 is left, > 0 is right
     };
 
-    // this actually publishes the message that we constructed above
-    // again, the topic name is a convention based on the car being called "ego"
+    // publish the controls message to the car
     topics.emit('/ego/controls', controls);
   });
 }
@@ -68,7 +49,7 @@ export default class HelloTopics {
   static info() {
     return {
       name: 'Hello Topics!',
-      description: 'Drive the car to the white box by publishing a control message.',
+      description: 'Modify the `controls` message in the `onInit` function to make the car drive into the white box.',
       defaultCode,
     };
   }
