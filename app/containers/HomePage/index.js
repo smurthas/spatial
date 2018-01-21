@@ -98,7 +98,7 @@ const initialVehicle = () => ({
   yaw: Math.PI/2.0,
   L_f: 2.2,
   L_r: 2.2,
-  width: 2.5,
+  width: 2.3,
 });
 
 export default class HomePage extends React.PureComponent { // eslint-disable-line react/prefer-stateless-function
@@ -118,7 +118,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
       code,
       vehicle: initialVehicle(),
       poses: [],
-      showLevelInfo: true,
+      showLevelInfo: false,
     };
     setImmediate(() => this.reset());
   }
@@ -206,6 +206,8 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
   }
 
   objectsFromVehicle(vehicle) {
+    const carColor = '200, 50, 50';
+    const carAsset = 'car02';
     return [
       ...this.scenario.map.areas,
       ...(this.state.path || []).map(({ position }, i) => ({
@@ -219,18 +221,17 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
       ...(this.state.poses || []).map(({ position }, i) => ({
         type: 'circle',
         name: `Pose Point ${i}`,
-        fillColor: 'rgba(192, 96, 96, 0.6)',
+        fillColor: `rgba(${carColor}, 0.8)`,
         x: position.x,
         y: position.y,
-        radius: 0.5,
+        radius: 0.35,
       })),
       {
-        type: 'rect',
-        fillColor: '#bb6666',
+        type: 'img',
+        name: 'Ego',
+        asset: carAsset,
         x: vehicle.x,
         y: vehicle.y,
-        length: vehicle.L_f + vehicle.L_r,
-        width: vehicle.width,
         heading: vehicle.yaw,
       },
     ];

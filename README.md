@@ -15,11 +15,9 @@ TODO:
   * [ ] Accelerate
   * [ ] Steer
   * [ ] Brake
+  * [ ] Docs for topics, onInit
 * [ ] Holonomic starter level
 * [ ] → "level"
-* [x] Name + description to modal on new level
-* [ ] Better top-down car
-* [ ] Docs for topics, onInit
 * [ ] Move out of onInit?
 * [ ] Remove onSensors (in favor of msgs)
 * [ ] Flow from one level to next (urls per level)
