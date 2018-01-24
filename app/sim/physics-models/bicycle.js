@@ -28,7 +28,7 @@ const step = ({ lf, lr }, { theta, a, b }, pose, velocity, dt) => {
   };
 };
 
-class BicycleModel {
+export default class BicycleModel {
   constructor(options) {
     const { position, orientation } = options.pose || {};
     const { linear, angular } = options.velocity || {};
@@ -54,4 +54,3 @@ class BicycleModel {
   }
 }
 
-module.exports = BicycleModel;

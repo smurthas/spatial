@@ -1,23 +1,25 @@
 
-const BicycleModel = require('./physics-models/bicycle');
+const BicycleModel = require('./physics-models/bicycle').default;
+const StaticModel = require('./physics-models/static').default;
 
 const physicsModels = {
   bicycle: BicycleModel,
+  static: StaticModel,
 };
 
 const loadPhysicsModel = name => physicsModels[name];
 
 
 class Actor {
-  constructor(options, topics) {
-    const Physics = loadPhysicsModel(options.physics.name);
-    this.physics = new Physics(options.physics);
-    this.name = options.name;
+  constructor({ listen={}, name, physics }, topics) {
+    const Physics = loadPhysicsModel(physics.name);
+    this.physics = new Physics(physics);
+    this.name = name;
 
     // TODO: not controls, but messages?
     this.controls = {};
 
-    Object.keys(options.listen).forEach(topic => {
+    Object.keys(listen).forEach(topic => {
       topics.on(topic, evt => {
         this.controls = {
           ...this.controls,

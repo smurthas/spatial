@@ -1,4 +1,4 @@
-class Static {
+export default class Static {
   constructor(options) {
     const { position, orientation } = options.pose || {};
     this.pose = {
@@ -16,4 +16,3 @@ class Static {
   }
 }
 
-module.exports = Static;

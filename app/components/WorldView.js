@@ -75,68 +75,6 @@ export default class WorldView extends Component {
     }
   }
 
-  drawCar({ context, x, y, width, length, heading }) {
-    const l2 = length/2 * this.state.scale;
-    const w2 = width/2 * this.state.scale;
-    const r = 0.3 * this.state.scale;
-    context.beginPath();
-    const { x: xPx, y: yPx } = this.worldToCanvas({ x, y });
-    context.translate(xPx, yPx);
-    context.rotate(-heading);
-    context.moveTo(l2 - r, w2);
-    context.lineTo(l2, w2 - r);
-
-    context.lineTo(l2, -w2 + r);
-    context.lineTo(l2 - r, -w2);
-
-    context.lineTo(-l2 + r, -w2);
-    context.lineTo(-l2, -w2 + r);
-
-    context.lineTo(-l2, w2 - r);
-    context.lineTo(-l2 + r, w2);
-    context.closePath();
-    context.fill();
-
-    context.fillStyle = '#000'; /* eslint no-param-reassign: 0 */
-
-    // windshield
-    context.beginPath();
-    context.moveTo(l2*0.4, w2*0.6);
-    context.lineTo(l2*0.5, 0);
-    context.lineTo(l2*0.4, -w2*0.6);
-    context.lineTo(l2*0.0, -w2*0.5);
-    context.lineTo(l2*0.0, w2*0.5);
-    context.closePath();
-    context.fill();
-
-    // rear window
-    context.beginPath();
-    context.moveTo(-l2*0.8, w2*0.4);
-    context.lineTo(-l2*0.8, -w2*0.4);
-    context.lineTo(-l2*0.6, -w2*0.5);
-    context.lineTo(-l2*0.6, w2*0.5);
-    context.closePath();
-    context.fill();
-
-    // left window
-    context.beginPath();
-    context.moveTo(l2*0.2, -w2*0.7);
-    context.lineTo(l2*0.2, -w2*0.8);
-    context.lineTo(-l2*0.4, -w2*0.8);
-    context.lineTo(-l2*0.4, -w2*0.6);
-    context.closePath();
-    context.fill();
-
-    // left window
-    context.beginPath();
-    context.moveTo(l2*0.2, w2*0.7);
-    context.lineTo(l2*0.2, w2*0.8);
-    context.lineTo(-l2*0.4, w2*0.8);
-    context.lineTo(-l2*0.4, w2*0.6);
-    context.closePath();
-    context.fill();
-  }
-
   drawCircle({ context, x, y, radius }) {
     const ctr = this.worldToCanvas({ x, y });
     const radCanvas = radius * this.state.scale;
@@ -176,7 +114,11 @@ export default class WorldView extends Component {
       this.shift.x = -1.0 * (center.x - (width/this.state.scale/4));
       this.shift.y = -1.0 * (center.y - (height/this.state.scale/4));
     }
-    canvas.getContext('2d').clearRect(0, 0, width/2, height/2);
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return;
+    }
+    context.clearRect(0, 0, width/2, height/2);
     objects.forEach(object => {
       const ctx = canvas.getContext('2d');
       ctx.save();
@@ -201,11 +143,6 @@ export default class WorldView extends Component {
           ctx.rotate(-object.heading);
         }
         this.drawImage({
-          ...object,
-          context: ctx,
-        });
-      } else if (object.type === 'car') {
-        this.drawCar({
           ...object,
           context: ctx,
         });

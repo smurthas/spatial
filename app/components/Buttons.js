@@ -11,9 +11,13 @@ const BaseButton = styled.button`
   &:focus {
     outline: 0;
   }
-  &:hover {
+  &:hover:not(:disabled) {
     padding-bottom: 0px;
     border-bottom: 2px solid #29d;
+  }
+  &:disabled {
+    border: none;
+    color: #777;
   }
 `;
 

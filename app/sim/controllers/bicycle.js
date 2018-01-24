@@ -5,7 +5,9 @@ const Pose = require('../Pose');
 
 class BicycleController {
   constructor(options, topics) {
-    const { p = -0.05, i = 0.0, d = -1.2 } = options;
+    const { p = -0.05, i = 0.0, d = -1.2, targetSpeed = 9.3, accel = 2 } = options;
+    this.targetSpeed = targetSpeed;
+    this.accel = accel;
     this.pid = new PID({ p, i, d });
     this.publishControls = topics.emit.bind(topics, options.publishControlsTopic);
   }
@@ -79,7 +81,7 @@ class BicycleController {
     }
 
     const speed = this.velocity && this.velocity.linear.magnitude() || 0;
-    const a = speed < 9.3 ? 2 : 0;
+    const a = speed < this.targetSpeed ? this.accel : 0;
     const controls = { theta, a };
     this.publishControls(controls);
   }

@@ -1,10 +1,10 @@
 const assert = require('assert');
 const EventEmitter = require('events');
 
-const BicyclePathFollower = require('./controllers/bicycle');
-const Pose = require('./Pose');
+const BicyclePathFollower = require('../controllers/bicycle');
+const Pose = require('../Pose');
 
-const Simulator = require('./sim');
+const Simulator = require('../sim');
 const tolerant = (obj, esp = 0.001) => {
   const ret = {};
   Object.keys(obj).forEach(key => {
@@ -73,6 +73,7 @@ describe('sim', () => {
 
     const controller = new BicyclePathFollower({
       publishControlsTopic: '/ego/controls',
+      accel: 1,
     }, topics);
 
     topics.on('/ego/pose', evt => controller.on('pose', evt));

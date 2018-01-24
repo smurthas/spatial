@@ -11,21 +11,21 @@ This is a WIP, contributions welcomed!
 
 TODO:
 
-* [ ] Explain topics, publish, sensors, and fns in hello worlds
+* [ ] Explain topics, publish, sensors, and fns in hello worlds and docs
   * [ ] Accelerate
   * [ ] Steer
   * [ ] Brake
   * [ ] Docs for topics, onInit
 * [ ] Holonomic starter level
+* [ ] Flow from one level to next (urls per level), s/alert/modal/g
 * [ ] → "level"
 * [ ] Move out of onInit?
 * [ ] Remove onSensors (in favor of msgs)
-* [ ] Flow from one level to next (urls per level)
 * [ ] Collision is failure
+* [ ] Shadows
 * [ ] Better visualization of cones and course for Slalom
-* [ ] Zoom, pan, recenter/follow
-* [ ] Tests
-* [ ] Flipside for larger map
+* [ ] Pan, recenter/follow
+* [ ] Test stepping simulation
 * [ ] Publish to domain
 * [ ] Another scenario
 

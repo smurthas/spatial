@@ -1,7 +1,7 @@
 const assert = require('assert');
 
-const Pose = require('./Pose');
-const createTransform = require('./transform');
+const Pose = require('../Pose');
+const createTransform = require('../transform');
 
 const assertNearlyEqual = (a, b, eps = 0.000001) => {
   assert.equal(Math.round(a / eps) * eps, Math.round(b / eps) * eps);

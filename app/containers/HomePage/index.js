@@ -31,9 +31,7 @@ import styled from 'styled-components';
 import Simulator from '../../sim/sim';
 import BicyclePathFollower from '../../sim/controllers/bicycle';
 
-// import * as DriveToBox from '../../scenarios/DriveToBox';
-// import Slalom from '../../scenarios/Slalom';
-import HelloTopics from '../../scenarios/HelloTopics';
+import Scenarios from '../../scenarios';
 
 import WorldView from '../../components/WorldView';
 import LevelModal from '../../components/LevelModal';
@@ -105,22 +103,17 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
   constructor() {
     super();
     this.dt = 0.1;
-    this.ScenarioType = HelloTopics;
-    // this.ScenarioType = Slalom;
-    // this.ScenarioType = DriveToBox;
-    const { name, defaultCode } = this.ScenarioType.info();
-    const code = window.localStorage.getItem(`${name}:code`) || defaultCode;
-
+    this.ScenarioType = Scenarios.HelloTopics;
+    const { defaultCode: code } = this.ScenarioType.info();
 
     this.scenario = new this.ScenarioType();
     this.state = {
       splitWidth: DEFAULT_SPLIT_WIDTH,
       code,
-      vehicle: initialVehicle(),
-      poses: [],
       showLevelInfo: false,
+      ...this.getBaseState(code),
     };
-    setImmediate(() => this.reset());
+    this.newSimulatorFromState();
   }
 
   componentWillUpdate(newProps, newState) {
@@ -128,9 +121,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
     if (dt > 0) {
       // this.prevUpdate = Date.now();
       // only tick when time steps
-      setTimeout(() => {
-        this.tick(newState);
-      }, 10);
+      this.tick(newState);
     }
   }
 
@@ -140,8 +131,23 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
     }
   }
 
-  getNewRobot() {
-    return evalCode(`${this.state.code}; (function() { return { onInit: onInit, onSensors: onSensors } })();`);
+  getNewRobot(code) {
+    return evalCode(`${code}; (function() { return { onInit: onInit, onSensors: onSensors } })();`);
+  }
+
+  getBaseState(code) {
+    const robot = this.getNewRobot(code);
+    return {
+      t_0: 0,
+      tPrev: 0,
+      robot,
+      vehicle: initialVehicle(),
+      running: false,
+      poses: [],
+      path: [],
+      passed: false,
+      failed: false,
+    };
   }
 
   newSimulatorFromState() {
@@ -238,20 +244,21 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
   }
 
   tick(state) {
-    // console.error('tick', state);
-    const { tPrev, vehicle } = state;
+    const { vehicle } = state;
     const { x, y, yaw } = vehicle;
 
     const { pass=false, fail=false } = this.scenario.checkGoal(state) || {};
     if (pass) {
       // goal completed!
-      alert(`Goal completed in ${Math.round(tPrev*10)/10} seconds!`); /* eslint no-alert: 0 */
+      // alert(`Goal completed in ${Math.round(tPrev*10)/10} seconds!`); /* eslint no-alert: 0 */
       this.stop();
+      this.setState({ passed: true, failed: false });
       return;
     } else if (fail) {
       // goal completed!
-      alert(`Failed to complete the goal: ${fail}`); /* eslint no-alert: 0 */
+      // alert(`Failed to complete the goal: ${fail}`); /* eslint no-alert: 0 */
       this.stop();
+      this.setState({ passed: false, failed: true });
       return;
     }
 
@@ -273,7 +280,7 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
       if (this.state.running) {
         this.step(true);
       }
-    }, 1);
+    }, 10);
   }
 
   stop() {
@@ -282,17 +289,8 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
 
   reset() {
     this.scenario.reset();
-    const robot = this.getNewRobot();
 
-    this.setState({
-      t_0: 0,
-      tPrev: 0,
-      robot,
-      vehicle: initialVehicle(),
-      running: false,
-      poses: [],
-      path: [],
-    });
+    this.setState(this.getBaseState(this.state.code));
     setImmediate(() => {
       this.newSimulatorFromState();
     });
@@ -323,8 +321,9 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
   }
 
   render() {
-    const { running, vehicle } = this.state;
+    const { running, vehicle, passed, failed } = this.state;
     const { x, y, yaw } = vehicle;
+    const done = passed || failed;
     const playPause = () => running ? this.stop() : this.run();
     const playPauseIcon = running ? faPause : faPlay;
     const playPauseText = running ? 'Pause' : 'Start';
@@ -353,17 +352,19 @@ export default class HomePage extends React.PureComponent { // eslint-disable-li
           <Logo>[∂λ]</Logo>
           {/* '∞Ω' */}
           <div style={{ display: 'inline-block', width: 100 }}>
-            <ControlButton style={{ textAlign: 'left' }} onClick={playPause}><FontAwesomeIcon icon={playPauseIcon} /> {playPauseText}</ControlButton>
+            <ControlButton style={{ textAlign: 'left' }} disabled={done} onClick={playPause}>
+              <FontAwesomeIcon icon={playPauseIcon} /> {playPauseText}
+            </ControlButton>
           </div>
-          <ControlButton onClick={step} value="Step"><FontAwesomeIcon icon={faStepForward} /> Step</ControlButton>
-          <ControlButton onClick={reset} ><FontAwesomeIcon icon={faUndo} /> Reset</ControlButton>
-          <ControlButton onClick={regen} ><FontAwesomeIcon icon={faRandom} /> Regenerate</ControlButton>
+          <ControlButton onClick={step} value="Step" disabled={done}><FontAwesomeIcon icon={faStepForward} /> Step</ControlButton>
+          <ControlButton onClick={reset} value="Reset"><FontAwesomeIcon icon={faUndo} /> Reset</ControlButton>
+          <ControlButton onClick={regen}><FontAwesomeIcon icon={faRandom} /> Regenerate</ControlButton>
           <span style={{ paddingLeft: 10, paddingRight: 10 }}>|</span>
           <FontAwesomeIcon style={{ marginLeft: 4, marginRight: 10 }} icon={faStopWatch} />
-          <span>{time}</span>
+          <span id="sim-time">{time}</span>
           <span style={{ paddingLeft: 10, paddingRight: 10 }}>|</span>
           <FontAwesomeIcon style={{ marginLeft: 4, marginRight: 10 }} icon={faCompass} />
-          <Pose x={x} y={y} yaw={yaw} />
+          <Pose id="ego-pose" x={x} y={y} yaw={yaw} />
         </PageHeader>
         <SplitPane
           style={{ height: 'calc(100% - 60px)', overflowY: 'hidden' }}
