@@ -17,15 +17,12 @@ TODO:
   * [ ] Brake
   * [ ] Docs for topics, onInit
 * [ ] Holonomic starter level
-* [ ] Flow from one level to next (urls per level), s/alert/modal/g
-* [ ] → "level"
 * [ ] Move out of onInit?
 * [ ] Remove onSensors (in favor of msgs)
 * [ ] Collision is failure
 * [ ] Shadows
 * [ ] Better visualization of cones and course for Slalom
 * [ ] Pan, recenter/follow
-* [ ] Test stepping simulation
 * [ ] Publish to domain
 * [ ] Another scenario
 

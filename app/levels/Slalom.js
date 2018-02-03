@@ -1,3 +1,4 @@
+import Vector from '../sim/Vector';
 
 const defaultCode = `const PIDPathFollower = this.require('pid-path-follower');
 
@@ -95,13 +96,14 @@ export default class Slalom {
   }
 
   reset() {
+    // TODO: calculate this differently so the level object isn't stateful
     this.conesPassed = {};
   }
 
-  getSensors(state) {
+  getSensors({ pose }) {
     return {
       cones: this.cones,
-      color: isInBox(state.vehicle.y) ? 'white' : 'black',
+      color: isInBox(pose.y) ? 'white' : 'black',
     };
   }
 
@@ -109,16 +111,16 @@ export default class Slalom {
     if (!this.previousState) {
       this.previousState = state;
     }
-    const { vehicle, tPrev } = state;
-    const { x, y } = vehicle;
+    const { pose, tPrev } = state;
+    const { x, y } = pose;
 
-    const { poses } = state;
+    const { poses = [] } = state;
     const dt = tPrev - this.previousState.tPrev;
     const v = poses.length < 2 ? 0 :
-      poses.slice(-1)[0].position.minus(poses.slice(-2)[0].position).magnitude() / dt;
+      (new Vector(poses.slice(-1)[0])).minus(new Vector(poses.slice(-2)[0])).magnitude() / dt;
 
     this.cones.forEach((cone, i) => {
-      if (this.previousState.vehicle.y < cone.y && state.vehicle.y > cone.y) {
+      if (this.previousState.pose.y < cone.y && state.pose.y > cone.y) {
         // passed this cone
         if ((cone.passOn === 'left' && x < cone.x) ||
             (cone.passOn === 'right' && x > cone.x)) {

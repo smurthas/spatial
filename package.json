@@ -193,15 +193,15 @@
       "!app/*/RbGenerated*/*.{js,jsx}",
       "!app/app.js",
       "!app/routes.js",
-      "!app/scenarios/DriveToBox.js",
-      "!app/scenarios/Slalom.js"
+      "!app/levels/DriveToBox.js",
+      "!app/levels/Slalom.js"
     ],
     "coverageThreshold": {
       "global": {
-        "statements": 89,
+        "statements": 88,
         "branches": 79,
         "lines": 89,
-        "functions": 78
+        "functions": 76
       }
     },
     "moduleDirectories": [
@@ -223,6 +223,7 @@
     "babel-polyfill": "6.20.0",
     "bootstrap": "^3.3.7",
     "chalk": "1.1.3",
+    "codemirror": "^5.33.0",
     "compression": "1.6.2",
     "cross-env": "3.1.3",
     "express": "4.14.0",
@@ -236,7 +237,7 @@
     "minimist": "1.2.0",
     "react": "15.4.1",
     "react-bootstrap": "^0.31.2",
-    "react-codemirror": "^1.0.0",
+    "react-codemirror2": "^4.0.0",
     "react-dom": "15.4.1",
     "react-helmet": "3.2.2",
     "react-intl": "2.1.5",

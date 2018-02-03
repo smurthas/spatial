@@ -7,8 +7,11 @@ import { Image } from 'canvas';
 import { mount } from 'enzyme';
 import React from 'react';
 import sinon from 'sinon';
+import { Provider } from 'react-redux';
+import { browserHistory } from 'react-router';
 
-import HomePage from '../index';
+import configureStore from '../../../store';
+import ConnectedHomePage, { HomePage } from '../index';
 import assets from '../../../assets';
 
 const patchImgs = () => {
@@ -28,18 +31,27 @@ const patchImgs = () => {
 };
 
 describe('<HomePage />', () => {
+  let store;
+  beforeAll(() => {
+    store = configureStore({}, browserHistory);
+  });
+
   it('should render the page message', (done) => {
     const test = () => {
       // patch in the img data from disk
       patchImgs();
 
-      sinon.spy(HomePage.prototype, 'render');
+      sinon.spy(ConnectedHomePage.prototype, 'render');
       global.document.body.createTextRange = () => ({
         getBoundingClientRect: () => ({ left: 0, right: 0, top: 0, bottom: 0 }),
         getClientRects: () => ({ left: 0, right: 0, top: 0, bottom: 0 }),
       });
-      const homePage = mount(<HomePage />);
-
+      const wrapper = mount(
+        <Provider store={store}>
+          <ConnectedHomePage />
+        </Provider>
+      );
+      const homePage = wrapper.find(HomePage);
       const step = () => homePage.find('button[value="Step"]').simulate('click');
       const reset = () => homePage.find('button[value="Reset"]').simulate('click');
       const assertTime = t => {
@@ -47,7 +59,8 @@ describe('<HomePage />', () => {
         expect(parseInt(text, 10) / 1000).toEqual(t);
       };
 
-      expect(HomePage.prototype.render.callCount).toEqual(1);
+      // once to start, then once to set the level
+      expect(ConnectedHomePage.prototype.render.callCount).toEqual(2);
 
       assertTime(0);
 
@@ -59,27 +72,27 @@ describe('<HomePage />', () => {
       }
       assertTime(15);
 
-      expect(homePage.state('passed')).toEqual(false);
-      expect(homePage.state('failed')).toEqual(false);
+      expect(homePage.prop('level').passed).toEqual(false);
+      expect(homePage.prop('level').failed).toEqual(false);
 
       step();
-      assertTime(15.1);
+      assertTime(15);
 
-      expect(homePage.state('passed')).toEqual(false);
-      expect(homePage.state('failed')).toEqual(true);
+      expect(homePage.prop('level').passed).toEqual(false);
+      expect(!!homePage.prop('level').failed).toEqual(true);
 
       step();
-      // asser that button is not clickable
-      assertTime(15.1);
+      // assert that button is not clickable
+      assertTime(15);
 
-      expect(homePage.state('passed')).toEqual(false);
-      expect(homePage.state('failed')).toEqual(true);
+      expect(homePage.prop('level').passed).toEqual(false);
+      expect(!!homePage.prop('level').failed).toEqual(true);
 
       reset();
       assertTime(0);
 
-      expect(homePage.state('passed')).toEqual(false);
-      expect(homePage.state('failed')).toEqual(false);
+      expect(homePage.prop('level').passed).toEqual(false);
+      expect(homePage.prop('level').failed).toEqual(false);
 
       done();
     };

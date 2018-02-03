@@ -140,10 +140,10 @@ export default class HelloTopics {
     };
   }
 
-  checkGoal({ vehicle, tPrev=0 }) {
+  checkGoal({ pose, tPrev=0 }) {
     const fail = tPrev >= this.timeout &&
         `need to reach the box in < ${this.timeout} seconds -- try accelerating faster!`;
-    const pass = !fail && vehicle.y > this.finishY;
+    const pass = !fail && pose.y > this.finishY;
     return { pass, fail };
   }
 }

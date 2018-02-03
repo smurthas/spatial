@@ -15,11 +15,14 @@ const LevelModal = ({ name, description, show, onDone }) => (
       content: {
         background: '#151515',
         top: modalMargin,
-        left: modalMargin,
-        right: modalMargin,
+        left: modalMargin*2,
+        right: modalMargin*2,
         bottom: modalMargin,
+        paddingLeft: 40,
+        paddingRight: 40,
       },
     }}
+    ariaHideApp={false}
   >
     <BaseButton style={{ float: 'right', marginTop: 19 }} onClick={onDone}>done</BaseButton>
     <h2>{name}</h2>
