@@ -1,12 +1,15 @@
 // import DriveToBox from './DriveToBox';
+import HelloDidi from './HelloDidi';
 import HelloTopics from './HelloTopics';
 import Slalom from './Slalom';
 
 const worlds = [
   {
-    name: 'Holo',
-    description: 'Meet Holo, the smartest vacuum around!',
-    levels: [],
+    name: 'Didi',
+    description: 'Meet Didi, the smartest vacuum around!',
+    levels: [
+      HelloDidi,
+    ],
   },
   {
     name: 'Ego',

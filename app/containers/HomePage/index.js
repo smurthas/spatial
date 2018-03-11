@@ -15,8 +15,6 @@ import { createSelector } from 'reselect';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import leftPad from 'left-pad';
-import { Controlled as CodeMirror } from 'react-codemirror2';
-import 'codemirror/mode/javascript/javascript';
 
 // import EventEmitter from 'events';
 
@@ -45,7 +43,14 @@ import {
 import WorldView from '../../components/WorldView';
 import LevelModal from '../../components/LevelModal';
 import { BaseButton } from '../../components/Buttons';
-import { Pose } from '../../components/TextDisplay';
+import { PoseField } from '../../components/TextDisplay';
+import CodeEditor from '../../components/CodeEditor';
+
+import { computeOGridFromPoses } from '../../sim/utils';
+// import createTransform from '../../sim/transform';
+// import Pose from '../../sim/Pose';
+
+// import assets from '../../assets';
 
 const DEFAULT_SPLIT_WIDTH = 580;
 
@@ -102,14 +107,27 @@ ControlButton.propTypes = {
   text: PropTypes.string.isRequired,
 };
 
-const codeMirrorOptions = {
-  lineNumbers: true,
-  mode: 'javascript',
-  theme: 'base16-dark',
-  viewportMargin: Infinity,
-  lineWrapping: true,
-};
 
+/*
+const ogridRects = (ogrid, fillColor) => {
+  const { width: cols, resolution, origin, data } = ogrid;
+  const { x: originX, y: originY } = origin.position || origin;
+  return data.map((v, idx) => {
+    const c = idx % cols;
+    const r = Math.floor(idx / cols);
+    const x = originX + ((c + 0.5) * resolution);
+    const y = originY + ((r + 0.5) * resolution);
+    return {
+      type: 'rect',
+      fillColor: `rgba(${fillColor}, ${v / 255.0})`,
+      x,
+      y,
+      width: resolution*0.95,
+      length: resolution*0.95,
+    };
+  });
+};
+*/
 
 class HomePage extends React.PureComponent { // eslint-disable-line react/prefer-stateless-function
   constructor() {
@@ -127,7 +145,7 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
   }
 
   componentWillMount() {
-    this.props.onSetLevel({ world: 1, level: 0 });
+    this.props.onSetLevel({ world: 0, level: 0 });
   }
 
   componentWillReceiveProps(nextProps) {
@@ -153,10 +171,78 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     this.setState({ splitWidth });
   }
 
-  objectsFromVehicle(vehicle) {
-    const carColor = '200, 50, 50';
-    const carAsset = 'car02';
-    const { map = {}, poses = [] } = this.props.level;
+  objectsFromVehicle() {
+    const {
+      map = {},
+      poses = [],
+      info = {},
+      actorsStates = [],
+      actors = [],
+    } = this.props.level;
+
+    const levelMarkers = (info.display || []).map(levelDisplay => {
+      const { type } = levelDisplay;
+      if (type === 'points') {
+        // TODO: support `from` field
+        const { fillColor = 'rgba(200, 50, 50)', radius = 0.35 } = levelDisplay;
+        return poses.map(({ x, y }, i) => ({
+          type: 'circle',
+          name: `Pose Point ${i}`,
+          fillColor,
+          x,
+          y,
+          radius,
+        }));
+      } else if (type === 'accogrid') {
+        // TODO: support `from` field
+        const { grid, fillColor } = levelDisplay;
+        const { cols, resolution, origin } = grid;
+        const ogrid = computeOGridFromPoses({ poses, ...grid });
+        return ogrid.map((v, idx) => {
+          const c = idx % cols;
+          const r = Math.floor(idx / cols);
+          const x = origin.x + ((c + 0.5) * resolution);
+          const y = origin.y + ((r + 0.5) * resolution);
+          return {
+            type: 'rect',
+            fillColor: v ? fillColor : 'rgba(0,0,0,0)',
+            x,
+            y,
+            width: resolution,
+            length: resolution,
+          };
+        });
+      }
+
+      return [];
+    });
+
+    const drawnActors = actors.map((actor, i) => ({
+      ...actor.draw,
+      x: actorsStates[i].pose.position.x,
+      y: actorsStates[i].pose.position.y,
+      heading: actorsStates[i].pose.orientation && actorsStates[i].pose.orientation.yaw,
+    }));
+
+    /*
+    const actorBBoxes = actors.map(({ draw, asset }, i) => ({
+      x: actorsStates[i].pose.position.x,
+      y: actorsStates[i].pose.position.y,
+      heading: actorsStates[i].pose.orientation && actorsStates[i].pose.orientation.yaw || 0,
+      collisionPolysM: asset.collisionPolysM,
+      fillColor: 'rgba(192, 92, 92, 0.9)',
+      type: 'poly',
+    }));
+    */
+    const { obstacles = [] } = map;
+    /*
+     * const obsBBoxes = obstacles.map(obs => ({
+      ...obs,
+      fillColor: 'rgba(192, 92, 92, 0.9)',
+      type: 'poly',
+    }));
+    */
+
     return [
       ...map.areas,
       ...(this.state.path || []).map(({ position }, i) => ({
@@ -167,22 +253,28 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
         y: position.y,
         radius: 0.5,
       })),
-      ...poses.map(({ x, y }, i) => ({
-        type: 'circle',
-        name: `Pose Point ${i}`,
-        fillColor: `rgba(${carColor}, 0.8)`,
-        x,
-        y,
-        radius: 0.35,
-      })),
-      {
+      ...([].concat(...levelMarkers)), // flatten since each is an array
+      ...(obstacles || []),
+      ...drawnActors,
+      //...actorBBoxes,
+      // ...(obsBBoxes || []),
+      /*{
         type: 'img',
         name: 'Ego',
-        asset: carAsset,
+        asset,
         x: vehicle.x,
         y: vehicle.y,
         heading: vehicle.yaw,
       },
+      {
+        type: 'poly',
+        name: 'ego-col',
+        asset,
+        fillColor: 'rgba(92, 92, 192, 0.9)',
+        x: vehicle.x,
+        y: vehicle.y,
+        heading: vehicle.yaw,
+      },*/
     ];
   }
 
@@ -202,15 +294,17 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
   }
 
   render() {
-    const { running, pose, passed, failed, tPrev, code } = this.props.level;
+    const { running, pose, passed, failed, tPrev, code, syntaxError } = this.props.level;
     const { x, y, yaw } = pose;
     const done = !!(passed || failed);
     const playPauseIcon = running ? faPause : faPlay;
     const playPauseText = running ? 'Pause' : 'Start';
 
-    const { name, description } = this.props.level.info;
+    const { name, description, defaultScale, center = { x, y } } = this.props.level.info;
     const time = pprintTime(tPrev);
     const startPause = () => running ? this.props.onPause() : this.props.onStart();
+
+    const cantRun = !!(done || syntaxError);
     return (
       <div style={{ height: '100%' }}>
         <LevelModal
@@ -229,14 +323,14 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
           <Logo>[∂λ]</Logo>
           {/* '∞Ω' */}
           <ControlButton
-            disabled={done}
+            disabled={cantRun}
             onClick={startPause}
             icon={playPauseIcon}
             text={playPauseText}
           />
           <ControlButton
             onClick={() => this.props.onStep()}
-            disabled={done}
+            disabled={cantRun}
             icon={faStepForward}
             text="Step"
           />
@@ -247,7 +341,7 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
           <span id="sim-time">{time}</span>
           <HeaderDivider>|</HeaderDivider>
           <FontAwesomeIcon style={{ marginLeft: 4, marginRight: 10 }} icon={faCompass} />
-          <Pose id="ego-pose" x={x} y={y} yaw={yaw} />
+          <PoseField id="sim-pose" x={x} y={y} yaw={yaw} />
         </PageHeader>
 
         <SplitPane
@@ -257,8 +351,9 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
           onChange={this.setSplitWidth}
         >
           <WorldView
-            objects={this.objectsFromVehicle(pose)}
-            center={{ x, y: y + 25 }}
+            objects={this.objectsFromVehicle(pose, this.props.level.actorsStates)}
+            center={center}
+            defaultScale={defaultScale}
             width={this.state.splitWidth}
             height={540}
           />
@@ -268,10 +363,10 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
               <BaseButton onClick={this.showLevelInfo}> show info </BaseButton>
             </div>
             <div style={{ marginLeft: 5, flex: '1 1 auto', height: '100%', overflowY: 'scroll' }}>
-              <CodeMirror
-                value={code}
-                onBeforeChange={(e, d, value) => this.props.onSetCode(value)}
-                options={codeMirrorOptions}
+              <CodeEditor
+                code={code}
+                onCodeChange={value => this.props.onSetCode(value)}
+                syntaxError={this.props.level.syntaxError}
               />
             </div>
           </div>

@@ -45,12 +45,10 @@ export default class BicycleModel {
     this.lr = options.lr;
   }
 
-  step({ dt }, { theta=0, a=0, b=0 }) {
-    const { lf, lr, pose, velocity } = this;
+  step({ dt, pose, velocity }, { theta=0, a=0, b=0 }) {
+    const { lf, lr } = this;
 
-    const update = step({ lf, lr }, { theta, a, b }, pose, velocity, dt);
-    this.pose = update.pose;
-    this.velocity = update.velocity;
+    return step({ lf, lr }, { theta, a, b }, pose, velocity, dt);
   }
 }
 

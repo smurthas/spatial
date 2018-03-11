@@ -38,6 +38,15 @@ injectGlobal`
   .CodeMirror {
     height: 100%;
   }
+  .CodeMirror-syntax-error {
+    background-color: rgba(255, 255, 0, 0.8);
+  }
+  .CodeMirror-syntax-errors-gutter {
+    width: 1px;
+  }
+  .CodeMirror-syntax-error-background {
+    border-bottom: 2px solid red;
+  }
 
   .Resizer {
     -moz-box-sizing: border-box;

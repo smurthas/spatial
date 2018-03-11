@@ -11,14 +11,10 @@ This is a WIP, contributions welcomed!
 
 TODO:
 
-* [ ] Explain topics, publish, sensors, and fns in hello worlds and docs
-  * [ ] Accelerate
-  * [ ] Steer
-  * [ ] Brake
-  * [ ] Docs for topics, onInit
-* [ ] Holonomic starter level
-* [ ] Move out of onInit?
-* [ ] Remove onSensors (in favor of msgs)
+* […] Differential drive clean up level
+  * [ ] Percentage completed counter
+  * [ ] Sound when hit new square?
+* [x] Replace onSensors w tick, convert levels
 * [ ] Collision is failure
 * [ ] Shadows
 * [ ] Better visualization of cones and course for Slalom

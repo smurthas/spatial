@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 
 import { Position } from './TextDisplay';
@@ -23,11 +24,13 @@ const ZoomButton = styled.button`
 
 
 export default class WorldView extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
+    const { defaultScale = 8.0 } = props;
     this.shift = { x: 0, y: 0 };
     this.state = {
-      scale: 8.0,
+      defaultScale,
+      scale: defaultScale,
       showHUD: false,
       mouse: { x: 0, y: 0 },
     };
@@ -36,6 +39,15 @@ export default class WorldView extends Component {
   componentDidMount() {
     this.drawState(this.props);
     window.addEventListener('resize', () => this.drawState(this.props));
+  }
+
+  componentWillReceiveProps({ defaultScale }) {
+    if (defaultScale && defaultScale !== this.props.defaultScale) {
+      this.setState({
+        defaultScale,
+        scale: defaultScale,
+      });
+    }
   }
 
   componentDidUpdate() {
@@ -73,6 +85,18 @@ export default class WorldView extends Component {
         }
       }
     }
+  }
+
+  drawPolygon({ context, points }) {
+    context.beginPath();
+    const { scale } = this.state;
+    context.moveTo(points[0].x * scale, -points[0].y * scale);
+    points.slice(1).forEach(p => {
+      context.lineTo(p.x * scale, -p.y * scale);
+    });
+    context.closePath();
+    context.fill();
+    // TODO: maybe also clip and draw?
   }
 
   drawCircle({ context, x, y, radius }) {
@@ -136,6 +160,22 @@ export default class WorldView extends Component {
           ...object,
           context: ctx,
         });
+      } else if (object.type === 'poly') {
+        const { x: xPx, y: yPx } = this.worldToCanvas(object);
+        ctx.translate(xPx, yPx);
+        if (object.heading) {
+          ctx.rotate(-object.heading);
+        }
+        const { collisionPolysM } = object;
+        if (collisionPolysM) {
+          collisionPolysM.forEach(points => {
+            this.drawPolygon({
+              ...object,
+              points,
+              context: ctx,
+            });
+          });
+        }
       } else if (object.type === 'img') {
         const { x: xPx, y: yPx } = this.worldToCanvas(object);
         ctx.translate(xPx, yPx);
@@ -246,4 +286,8 @@ export default class WorldView extends Component {
     );
   }
 }
+
+WorldView.propTypes = {
+  defaultScale: PropTypes.number,
+};
 

@@ -10,7 +10,7 @@ const pprintValue = (val, len, dec) => {
 
 const PoseValue = ({ name, value, len = 7 }) => (
   <span><span style={{ fontWeight: 'bold' }}>{name}:</span>
-    <span style={{ width: (len * 10) + 10, paddingLeft: 4, display: 'inline-block' }}>{pprintValue(value, len, 0.01)}</span>
+    <span className={`sim-pose-${name}`} style={{ width: (len * 10) + 10, paddingLeft: 4, display: 'inline-block' }}>{pprintValue(value, len, 0.01)}</span>
   </span>
 );
 
@@ -32,22 +32,23 @@ Position.propTypes = {
   y: PropTypes.number.isRequired,
 };
 
-const Pose = ({ x, y, yaw }) => (
-  <span>
+const PoseField = ({ x, y, yaw, id }) => (
+  <span id={id}>
     <PoseValue name="x" value={x} />
     <PoseValue name="y" value={y} />
     <PoseValue name="yaw" value={yaw} />
   </span>
 );
 
-Pose.propTypes = {
+PoseField.propTypes = {
   x: PropTypes.number.isRequired,
   y: PropTypes.number.isRequired,
   yaw: PropTypes.number.isRequired,
+  id: PropTypes.string,
 };
 
 export {
-  Pose,
+  PoseField,
   Position,
 };
 

@@ -4,21 +4,20 @@ const PID = require('../PID');
 const Pose = require('../Pose');
 
 class BicycleController {
-  constructor(options, topics) {
+  constructor(options = {}) {
     const { p = -0.05, i = 0.0, d = -1.2, targetSpeed = 9.3, accel = 2 } = options;
     this.targetSpeed = targetSpeed;
     this.accel = accel;
     this.pid = new PID({ p, i, d });
-    this.publishControls = topics.emit.bind(topics, options.publishControlsTopic);
   }
 
   on(type, evt) {
     switch (type) {
       case 'path':
-        this.onPath(evt);
+        this.setPath(evt);
         break;
       case 'pose':
-        this.onPose(evt);
+        this.setPose(evt);
         break;
       default:
         break;
@@ -62,7 +61,7 @@ class BicycleController {
   computeControls() {
     // convert to vehicle frame
     if (!this.pose || !this.path || this.path.length < 2) {
-      return;
+      return { theta: 0, a: 0 };
     }
 
     const [prev, next] = this.getNextTwoWaypoints();
@@ -82,15 +81,14 @@ class BicycleController {
 
     const speed = this.velocity && this.velocity.linear.magnitude() || 0;
     const a = speed < this.targetSpeed ? this.accel : 0;
-    const controls = { theta, a };
-    this.publishControls(controls);
+    return { theta, a };
   }
 
-  onPath(path) {
+  setPath(path) {
     this.path = path;
   }
 
-  onPose({ timestamp, pose }) {
+  setPose({ timestamp, pose }) {
     if (this.pose) {
       const dt = timestamp - this.lastPoseTimestamp;
       this.velocity = {
@@ -99,7 +97,6 @@ class BicycleController {
     }
     this.pose = new Pose(pose);
     this.lastPoseTimestamp = timestamp;
-    this.computeControls();
   }
 }
 

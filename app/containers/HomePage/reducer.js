@@ -1,7 +1,9 @@
 import { fromJS } from 'immutable';
+import { parseScript } from 'esprima';
 
 import Simulator from '../../sim/sim';
 import BicyclePathFollower from '../../sim/controllers/bicycle';
+import DiffDriveSafetryController from '../../sim/controllers/diffDriveSafety';
 import Worlds from '../../levels';
 
 class SynchronousEmitter {
@@ -50,53 +52,40 @@ const BASE_STATE = fromJS({
 
 const modules = {
   'pid-path-follower': BicyclePathFollower,
+  'diff-drive-safety-controller': DiffDriveSafetryController,
 };
 
 function evalCode(code) {
+  const localRequire = (mod) => modules[mod];
   const evalThis = {
-    require: (mod) => modules[mod],
+    require: localRequire,
   };
-  function fn() {
-    return eval(`console.log("this:", this); ${code}`); /* eslint no-eval: 0 */
-  }
-  return fn.call(evalThis);
+  const wrappedCode = `
+${code};
+const robot = {};
+try {
+  robot.onInit = onInit;
+} catch(err) {}
+try {
+  robot.tick = tick;
+} catch(err) {}
+return robot;
+`;
+  const fn = new Function('require', wrappedCode); /* eslint no-new-func: 0 */
+  return fn.call(evalThis, localRequire);
 }
 
-const evalRobotCode = (code) =>
-  evalCode(`${code}; (function() { return { onInit: onInit, onSensors: onSensors } })();`);
-
-
-const newSimulatorFromState = ({ vehicle }) => {
+const newSimulatorFromState = () => {
   topics = new SynchronousEmitter();
-  robot.onInit(topics);
-  /*
-  topics.on('/ego/path', path => {
-    this.setState({ path });
-  });
-  */
+  const { onInit = () => undefined } = robot;
+  try {
+    onInit(topics);
+  } catch (err) {
+    console.error('Error executing onInit', err); /* eslint no-console: 0 */
+  }
 
   simulator = new Simulator({
-    actors: [
-      {
-        physics: {
-          name: 'bicycle',
-          lf: vehicle.L_f,
-          lr: vehicle.L_r,
-          pose: {
-            position: { x: vehicle.x, y: vehicle.y },
-            orientation: { yaw: vehicle.yaw },
-          },
-        },
-        name: 'ego',
-        listen: {
-          '/ego/controls': { set: 'controls' },
-        },
-        controller: {
-          // TODO control w code
-          type: 'bicycle',
-        },
-      },
-    ],
+    actors: levelObject.actors,
   }, topics);
 };
 
@@ -105,8 +94,10 @@ const reset = (state) => {
   // TODO:
   //   reset level (maybe remove?)
   //   new robot from code (e.g. clear any state from eval'd js
-  const newState = state.merge(BASE_STATE);
-  newSimulatorFromState({ vehicle: VEHICLE });
+  const actorsStates = fromJS((levelObject.actors || []).map(a => a.state));
+  const newState = state.merge(BASE_STATE)
+                        .set('actorsStates', actorsStates);
+  newSimulatorFromState();
   return newState;
 };
 
@@ -115,11 +106,15 @@ const regen = (state) => setLevel(state, state.toJS());
 
 const setLevel = (state, { world, level }) => {
   const Level = Worlds[world].levels[level];
-  const { defaultCode } = Level.info();
   levelObject = new Level();
+  const info = levelObject.info();
+  const { defaultCode } = info;
   const map = fromJS(levelObject.map);
-  const info = Level.info();
-  const withNextLevel = state.set('level', level).set('world', world).set('map', map).set('info', info);
+  const withNextLevel = state.set('level', level)
+                             .set('world', world)
+                             .set('map', map)
+                             .set('actors', levelObject.actors)
+                             .set('info', info);
   return setCode(withNextLevel, { code: defaultCode });
 };
 
@@ -143,11 +138,16 @@ const fail = (state, { message }) =>
 
 const stepOnce = (state) => {
   const pose = state.get('pose').toJS();
+  const egoState = state.get('actorsStates').toJS()[0];
   const stepCount = state.get('stepCount') + 1;
   const next = state.set('stepCount', stepCount);
   const dt = state.get('dt');
+  const actorsNames = state.get('actors').map(({ name }) => name);
   // TODO: s/tPrev/t||timestamp/g
   const tPrev = stepCount * dt;
+  if (tPrev > state.get('info').timeout) {
+    return fail(pause(state), { message: 'Time is up!' });
+  }
   const stepStartingState = next.set('tPrev', tPrev);
 
   const { pass: passMessage=false, fail: failMessage=false } = levelObject.checkGoal(state.toJS()) || {};
@@ -159,38 +159,65 @@ const stepOnce = (state) => {
     return fail(pause(state), { message });
   }
 
-  const sensors = {
-    pose,
+  const tickInput = {
+    state: egoState,
     ...levelObject.getSensors({
       pose,
     }),
+    timestamp: tPrev,
   };
 
   const publish = (topic, evt) => topics.emit(topic, evt);
-  robot.onSensors(publish, sensors);
+  const { tick = () => undefined } = robot;
+  const ego = {
+    setControls: ctrls => topics.emit(`/${actorsNames[0]}/controls`, ctrls),
+  };
+  tick(ego, tickInput, publish);
 
-  simulator.step(dt);
+  const actorsStates = stepStartingState.get('actorsStates').toJS();
+  const newActorsStates = simulator.step(dt, actorsStates);
+
+  const afterStepState = stepStartingState.set('actorsStates', fromJS(newActorsStates));
 
   // TODO: don't hard code to this actor
-  const { position = {}, orientation = {} } = simulator.actors[0].physics.pose;
+  const newPose = newActorsStates[0].pose;
+  const { position = {}, orientation = {} } = newPose;
+  newActorsStates.forEach((newActorsState, i) => {
+    if (newActorsState.collision) {
+      publish(`/${actorsNames[i]}/collision`, {});
+    }
+  });
 
   const { x, y } = position;
   const { yaw } = orientation;
 
   const mPose = fromJS({ x, y, yaw });
-  const withPose = stepStartingState.set('pose', mPose);
+  const withPose = afterStepState.set('pose', mPose);
   return withPose.update('poses', (poses = fromJS([])) => poses.push(mPose));
 
   // TODO: should emit update information here, not in simulator
 };
 
 const setCode = (state, { code }) => {
+  const withCode = state.set('code', code);
+  let parsed = false;
   try {
-    robot = evalRobotCode(code);
-  } catch (err) {
-    console.error('User code parsing err', err); /* eslint no-console: 0 */
+    parseScript(code);
+    parsed = true;
+  } catch (parseErr) {
+    console.error('User code parsing err', parseErr); /* eslint no-console: 0 */
+    console.log(code.split('\n')[parseErr.lineNumber - 1]);
+    return reset(withCode.set('syntaxError', parseErr));
   }
-  return reset(state.set('code', code));
+
+  if (parsed) {
+    try {
+      robot = evalCode(code);
+    } catch (err) {
+      console.error('User code runtime err', err); /* eslint no-console: 0 */
+    }
+  }
+  return reset(withCode.delete('syntaxError'));
 };
 
 const levelReducerActions = {

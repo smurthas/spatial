@@ -1,37 +1,41 @@
+import ego from '../actors/Ego';
+
+import Pose from '../sim/Pose';
 import Vector from '../sim/Vector';
+import Velocity from '../sim/Velocity';
 
-const defaultCode = `const PIDPathFollower = this.require('pid-path-follower');
+const defaultCode = `
+const PIDPathFollower = require('pid-path-follower');
 
-function onInit(topics) {
-  const pathFollower = new PIDPathFollower({
-    publishControlsTopic: '/ego/controls',
-  }, topics);
+const pathFollower = new PIDPathFollower();
 
-  topics.on('/ego/pose', pose => pathFollower.on('pose', pose));
-  topics.on('/ego/path', path => pathFollower.on('path', path));
-}
+const convertConesToPath = (cones, offset = 2) => cones.map(({ x, y, passOn }) => ({
+  position: { x: x + (passOn === 'left' ? -offset : offset), y, z: 0 },
+  orientation: { roll: 0, pitch: 0, yaw: 1.57 },
+}));
 
-function onSensors(publish, { vehicle, cones, color }) {
+function tick(ego, { state: { pose }, cones, color, timestamp }) {
   // if over the stop box, well, stop
   if (color === 'white') {
-    publish('/ego/path', []);
-    publish('/ego/controls', { theta: 0, b: 5 });
+    ego.setControls({ theta: 0, b: 5 });
     return;
   }
 
-  const path = cones.map(({ x, y, passOn }) => {
-    return {
-      position: { x: x + (passOn === 'left' ? -5 : 5), y, z: 0 },
-      orientation: { roll: 0, pitch: 0, yaw: 1.57 },
-    };
-  });
+  const path = convertConesToPath(cones);
   const last = path.slice(-1)[0];
   path.push({
     position: { x: last.position.x, y: last.position.y + 50, z: 0 },
     orientation: { roll: 0, pitch: 0, yaw: 1.57 },
   });
-  publish('/ego/path', path);
-}`;
+
+  pathFollower.setPose({
+    timestamp,
+    pose,
+  });
+  pathFollower.setPath(path);
+  ego.setControls(pathFollower.computeControls());
+}
+`.trim();
 
 
 const BOX_START_Y = 250;
@@ -83,15 +87,44 @@ export default class Slalom {
       ],
     };
 
+    this.actors = [
+      ego({
+        state: {
+          pose: new Pose({
+            position: { x: 50, y: 50 },
+            orientation: { yaw: Math.PI / 2 },
+          }),
+          velocity: new Velocity(),
+        },
+      }),
+    ];
+
     this.conesPassed = {};
     this.timeout = 60;
   }
 
-  static info() {
+  info() {
     return {
       name: 'Slalom',
       description: 'Drive to the white box and then stop the vehicle. Stay left of red cones and right of the blue ones. The vehicle is equipped with a light sensor which will result in sensors.color === \'white\' when it is over the white  box.',
       defaultCode,
+      ego: {
+        asset: 'car02',
+        physics: {
+          name: 'bicycle',
+        },
+        name: 'ego',
+      },
+      display: [
+        {
+          type: 'points',
+          from: '/ego/pose',
+          fillColor: 'rgb(200, 50, 50)',
+          radius: 0.35,
+        },
+      ],
+      timeout: 45,
+      defaultScale: 8,
     };
   }
 

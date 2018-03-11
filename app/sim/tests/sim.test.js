@@ -3,6 +3,7 @@ const EventEmitter = require('events');
 
 const BicyclePathFollower = require('../controllers/bicycle');
 const Pose = require('../Pose');
+const Velocity = require('../Velocity');
 
 const Simulator = require('../sim');
 const tolerant = (obj, esp = 0.001) => {
@@ -37,31 +38,38 @@ describe('sim', () => {
   it('should step actors', () => {
     const cone = { position: { x: 4 }, orientation: { pitch: 1 } };
     const conePose = new Pose(cone);
-    const sim = new Simulator({
-      actors: [
-        {
-          physics: {
-            name: 'bicycle',
-            lf: 2,
-            lr: 2,
-          },
-          name: 'ego',
-          listen: {
-            '/ego/controls': { set: 'controls' },
-          },
-          controller: {
-            type: 'bicycle',
-          },
+
+    const coneInitState = { pose: conePose };
+    const egoInitState = { pose: originPose, velocity: new Velocity() };
+
+    const actors = [
+      {
+        physics: {
+          name: 'bicycle',
+          lf: 2,
+          lr: 2,
         },
-        {
-          physics: {
-            name: 'static',
-            pose: cone,
-          },
-          name: 'cone',
+        name: 'ego',
+        listen: {
+          '/ego/controls': { set: 'controls' },
         },
-      ],
-    }, topics);
+        controller: {
+          type: 'bicycle',
+        },
+        state: egoInitState,
+      },
+      {
+        physics: {
+          name: 'static',
+          pose: cone,
+        },
+        state: coneInitState,
+        name: 'cone',
+      },
+    ];
+    const sim = new Simulator({ actors }, topics);
+
+    let actorsStates = [egoInitState, coneInitState];
 
     const squarePath = [
       new Pose(),
@@ -71,58 +79,62 @@ describe('sim', () => {
       new Pose({ position: { x: 4, y: 0.5 } }),
     ];
 
-    const controller = new BicyclePathFollower({
-      publishControlsTopic: '/ego/controls',
-      accel: 1,
-    }, topics);
+    const controller = new BicyclePathFollower({ accel: 1 });
 
     topics.on('/ego/pose', evt => controller.on('pose', evt));
     topics.on('/ego/path', evt => controller.on('path', evt));
 
-    topics.emit('/ego/path', squarePath);
+    controller.setPath(squarePath);
+    controller.setPose({ timestamp: 0, pose: actorsStates[0].pose });
 
-    assert.deepEqual(sim.actors[0].physics.pose, originPose);
-    assert.deepEqual(sim.actors[0].physics.velocity, zeroVelocity);
+    assert.deepEqual(actorsStates[0].pose, originPose);
+    assert.deepEqual(actorsStates[0].velocity, zeroVelocity);
 
     topics.emit('/ego/controls', { theta: 0, a: 1 });
-    assert.deepEqual(sim.actors[1].physics.pose, conePose);
-    assert.deepEqual(sim.actors[1].physics.velocity, zeroVelocity);
+    assert.deepEqual(sim.actors[1].state.pose, conePose);
 
-    sim.step(0.1);
-    assert.deepEqual(sim.actors[0].physics.pose, originPose);
-    assert.deepEqual(sim.actors[0].physics.velocity, velocityFrom({
+    actorsStates = sim.step(0.1, actorsStates);
+    assert.deepEqual(actorsStates[0].pose, originPose);
+    assert.deepEqual(actorsStates[0].velocity, velocityFrom({
       linear: { x: 0.1 },
     }));
 
-    assert.deepEqual(sim.actors[1].physics.pose, conePose);
-    assert.deepEqual(sim.actors[1].physics.velocity, zeroVelocity);
+    assert.deepEqual(actorsStates[1].pose, conePose);
 
-    sim.step(0.05);
-    deepNearlyEqual(sim.actors[0].physics.pose, new Pose({
+    controller.setPose({ timestamp: 0.1, pose: actorsStates[0].pose });
+    topics.emit('/ego/controls', controller.computeControls());
+
+    actorsStates = sim.step(0.05, actorsStates);
+    deepNearlyEqual(actorsStates[0].pose, new Pose({
       position: { x: 0.005 },
     }));
-    deepNearlyEqual(sim.actors[0].physics.velocity, velocityFrom({
+    deepNearlyEqual(actorsStates[0].velocity, velocityFrom({
       linear: { x: 0.15 },
     }));
 
-    assert.deepEqual(sim.actors[1].physics.pose, conePose);
-    assert.deepEqual(sim.actors[1].physics.velocity, zeroVelocity);
+    assert.deepEqual(actorsStates[1].pose, conePose);
 
     topics.emit('/ego/controls', { theta: 5.0 / 180.0 * Math.PI, a: 0 });
-    sim.step(0.1);
-    deepNearlyEqual(sim.actors[0].physics.pose, new Pose({
+    actorsStates = sim.step(0.1, actorsStates);
+    deepNearlyEqual(actorsStates[0].pose, new Pose({
       position: { x: 0.02 },
       orientation: { yaw: 0.00065449 },
     }), 0.000001);
-    deepNearlyEqual(sim.actors[0].physics.velocity, velocityFrom({
+    deepNearlyEqual(actorsStates[0].velocity, velocityFrom({
       angular: { yaw: 0.0065449 },
       linear: { x: 0.15 },
     }));
 
-    assert.deepEqual(sim.actors[1].physics.pose, conePose);
-    assert.deepEqual(sim.actors[1].physics.velocity, zeroVelocity);
+    assert.deepEqual(actorsStates[1].pose, conePose);
     for (let i = 0; i < 100; i++) {
-      sim.step(0.1);
+      controller.setPose({ timestamp: 0.25 + (i * 0.1), pose: actorsStates[0].pose });
+      const controls = controller.computeControls();
+      topics.emit('/ego/controls', controls);
+      actorsStates = sim.step(0.1, actorsStates);
     }
+    deepNearlyEqual(actorsStates[0].pose, {
+      position: { x: 50.01008435368484, y: 9.653747880806517, z: 0 },
+      orientation: { roll: 0, pitch: 0, yaw: 0.19942110254059842 },
+    });
   });
 });
