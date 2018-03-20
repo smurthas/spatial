@@ -4,14 +4,14 @@ const store = window.localStorage;
 const getAllCode = () => {
   try {
     const codeStr = store.getItem('code');
-    return JSON.parse(codeStr);
+    return JSON.parse(codeStr) || [];
   } catch (err) {
     return [];
   }
 };
 
 const getCodeForLevel = ({ world, level }) => {
-  const allCode = getAllCode();
+  const allCode = getAllCode() || [];
   return (allCode[world] && allCode[world][level]) || '';
 };
 
