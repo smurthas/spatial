@@ -4,7 +4,10 @@ import { parseScript } from 'esprima';
 import Simulator from '../../sim/sim';
 import BicyclePathFollower from '../../sim/controllers/bicycle';
 import DiffDriveSafetryController from '../../sim/controllers/diffDriveSafety';
+import Transform from '../../sim/transform';
 import Worlds from '../../levels';
+
+import { saveCodeForLevel, getCodeForLevel } from '../../utils/codeStore';
 
 class SynchronousEmitter {
   constructor() {
@@ -21,18 +24,6 @@ class SynchronousEmitter {
   }
 }
 
-// TODO: make these not hardcoded
-const VEHICLE = {
-  x: 50,
-  y: 50,
-  v: 0,
-  yaw: Math.PI/2.0,
-  L_f: 2.2,
-  L_r: 2.2,
-  width: 2.3,
-};
-
-
 let robot = {};
 let simulator;
 let topics;
@@ -45,7 +36,7 @@ const BASE_STATE = fromJS({
   passed: false,
   failed: false,
   dt: 0.05,
-  pose: { x: VEHICLE.x, y: VEHICLE.y, yaw: VEHICLE.yaw },
+  pose: { x: 0, y: 0, yaw: 0 }, // TODO: real Pose
   poses: [],
 });
 
@@ -53,6 +44,7 @@ const BASE_STATE = fromJS({
 const modules = {
   'pid-path-follower': BicyclePathFollower,
   'diff-drive-safety-controller': DiffDriveSafetryController,
+  transform: Transform,
 };
 
 function evalCode(code) {
@@ -104,18 +96,22 @@ const reset = (state) => {
 // just set to existing level to generate a new level
 const regen = (state) => setLevel(state, state.toJS());
 
-const setLevel = (state, { world, level }) => {
+const setLevel = (state, { world: rawWorld, level: rawLevel }) => {
+  const world = parseInt(rawWorld, 10);
+  const level = parseInt(rawLevel, 10);
   const Level = Worlds[world].levels[level];
   levelObject = new Level();
   const info = levelObject.info();
   const { defaultCode } = info;
+
+  const userCode = getCodeForLevel({ world, level });
   const map = fromJS(levelObject.map);
   const withNextLevel = state.set('level', level)
                              .set('world', world)
                              .set('map', map)
                              .set('actors', levelObject.actors)
                              .set('info', info);
-  return setCode(withNextLevel, { code: defaultCode });
+  return setCode(withNextLevel, { code: userCode || defaultCode });
 };
 
 const nextLevel = (state) => {
@@ -123,10 +119,17 @@ const nextLevel = (state) => {
   const level = state.get('level');
   const w = Worlds[world];
   if (level + 1 < w.levels.length) {
-    return setLevel(state, { world, level: level + 1 });
+    // next level in world
+    window.location = `/challenges/${world}/${level + 1}`;
+  } else if (world + 1 < Worlds.length) {
+    // next world
+    window.location = `/challenges/${world + 1}/${level}`;
+  } else {
+    // completed all
+    window.location = '/completed-all';
   }
 
-  return setLevel(state, { world: world + 1, level: 0 });
+  return state;
 };
 
 const start = (state) => state.set('running', true);
@@ -138,14 +141,15 @@ const fail = (state, { message }) =>
 
 const stepOnce = (state) => {
   const pose = state.get('pose').toJS();
-  const egoState = state.get('actorsStates').toJS()[0];
+  const { timeout = 60, ego: { actorsIndex = 0 } } = state.get('info');
+  const egoState = state.get('actorsStates').toJS()[actorsIndex];
   const stepCount = state.get('stepCount') + 1;
   const next = state.set('stepCount', stepCount);
   const dt = state.get('dt');
   const actorsNames = state.get('actors').map(({ name }) => name);
   // TODO: s/tPrev/t||timestamp/g
   const tPrev = stepCount * dt;
-  if (tPrev > state.get('info').timeout) {
+  if (tPrev > timeout) {
     return fail(pause(state), { message: 'Time is up!' });
   }
   const stepStartingState = next.set('tPrev', tPrev);
@@ -170,7 +174,7 @@ const stepOnce = (state) => {
   const publish = (topic, evt) => topics.emit(topic, evt);
   const { tick = () => undefined } = robot;
   const ego = {
-    setControls: ctrls => topics.emit(`/${actorsNames[0]}/controls`, ctrls),
+    setControls: ctrls => topics.emit(`/${actorsNames[actorsIndex]}/controls`, ctrls),
   };
   tick(ego, tickInput, publish);
 
@@ -180,7 +184,7 @@ const stepOnce = (state) => {
   const afterStepState = stepStartingState.set('actorsStates', fromJS(newActorsStates));
 
   // TODO: don't hard code to this actor
-  const newPose = newActorsStates[0].pose;
+  const newPose = newActorsStates[actorsIndex].pose;
   const { position = {}, orientation = {} } = newPose;
   newActorsStates.forEach((newActorsState, i) => {
     if (newActorsState.collision) {
@@ -217,6 +221,11 @@ const setCode = (state, { code }) => {
       console.error('User code runtime err', err); /* eslint no-console: 0 */
     }
   }
+
+  const world = state.get('world');
+  const level = state.get('level');
+  saveCodeForLevel({ world, level, code });
+
   return reset(withCode.delete('syntaxError'));
 };
 
@@ -237,7 +246,7 @@ const levelReducerActions = {
   setCode,
 };
 
-export default function levelReducer(state = setLevel(BASE_STATE, { world: 1, level: 0 }), action) {
+export default function levelReducer(state = setLevel(BASE_STATE, { world: 0, level: 0 }), action) {
   if (!levelReducerActions[action.type]) {
     return state;
   }

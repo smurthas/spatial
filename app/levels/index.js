@@ -1,5 +1,6 @@
 // import DriveToBox from './DriveToBox';
 import HelloDidi from './HelloDidi';
+import DidiGoesHome from './DidiGoesHome';
 import HelloTopics from './HelloTopics';
 import Slalom from './Slalom';
 
@@ -8,6 +9,7 @@ const worlds = [
     name: 'Didi',
     description: 'Meet Didi, the smartest vacuum around!',
     levels: [
+      DidiGoesHome,
       HelloDidi,
     ],
   },
@@ -18,11 +20,6 @@ const worlds = [
       HelloTopics,
       Slalom,
     ],
-  },
-  {
-    name: 'Artie',
-    description: 'Meet Artie, the smartest arm in reach!',
-    levels: [],
   },
 ];
 

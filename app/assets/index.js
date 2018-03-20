@@ -26,6 +26,7 @@ import miniTruckTexture from './miniTruck.png';
 import miniVanTexture from './miniVan.png';
 import taxiTexture from './taxi.png';
 import diffDriveTexture from './diffDrive.png';
+import diffDriveChargerTexture from './diffDriveCharger.png';
 
 const loaded = {};
 
@@ -105,6 +106,10 @@ const textures = {
         { x: 393, y: 93 },
       ],
     ],
+  },
+  diffDriveCharger: {
+    src: diffDriveChargerTexture,
+    scale: 4000,
   },
   setLoadedCallback: cb => {
     textures.loadedCallback = cb;

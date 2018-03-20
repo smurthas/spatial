@@ -5,7 +5,7 @@ import assets from '../assets';
 
 const defaultState = () => ({ pose: new Pose(), velocity: new Velocity() });
 
-const didi = ({ name = 'didi', state = defaultState() } = {}) => ({
+const didi = ({ name = 'didi', state = defaultState(), primaryCollider } = {}) => ({
   name,
   draw: {
     type: 'img',
@@ -17,6 +17,7 @@ const didi = ({ name = 'didi', state = defaultState() } = {}) => ({
     trackWidth: 0.235,
   },
   state,
+  primaryCollider,
 });
 
 export default didi;

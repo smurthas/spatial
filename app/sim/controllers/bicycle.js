@@ -1,4 +1,4 @@
-const createTransform = require('../transform');
+import Transform from '../transform';
 
 const PID = require('../PID');
 const Pose = require('../Pose');
@@ -51,9 +51,9 @@ class BicycleController {
     const bisectV = v0.plus(v1).normalize();
     const yaw = Math.atan2(bisectV.y, bisectV.x);
 
-    const tf = createTransform({ position: closest, orientation: { yaw } });
-    const poseInBisect = tf(this.pose).position.y;
-    const prevInBisect = tf({ position: prev, orientation: { yaw: 0 } }).position.y;
+    const tf = new Transform({ position: closest, orientation: { yaw } });
+    const poseInBisect = tf.transform(this.pose).position.y;
+    const prevInBisect = tf.transform({ position: prev, orientation: { yaw: 0 } }).position.y;
     const offset = poseInBisect / prevInBisect > 0 ? -1 : 0;
     return this.path.slice(i + offset, i + offset + 2);
   }
@@ -69,8 +69,8 @@ class BicycleController {
     const dy = next.position.y - prev.position.y;
     const dx = next.position.x - prev.position.x;
     const yaw = Math.atan2(dy, dx);
-    const tfPrev = createTransform({ ...prev, orientation: { ...prev.orientation, yaw } });
-    const poseInPathFrame = tfPrev(this.pose);
+    const tfPrev = new Transform({ ...prev, orientation: { ...prev.orientation, yaw } });
+    const poseInPathFrame = tfPrev.transform(this.pose);
     const CTE = poseInPathFrame.position.y;
     let theta = this.pid.value(CTE);
     if (theta > 0.3) {
@@ -100,4 +100,4 @@ class BicycleController {
   }
 }
 
-module.exports = BicycleController;
+export default BicycleController;

@@ -47,7 +47,6 @@ import { PoseField } from '../../components/TextDisplay';
 import CodeEditor from '../../components/CodeEditor';
 
 import { computeOGridFromPoses } from '../../sim/utils';
-// import createTransform from '../../sim/transform';
 // import Pose from '../../sim/Pose';
 
 // import assets from '../../assets';
@@ -145,7 +144,8 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
   }
 
   componentWillMount() {
-    this.props.onSetLevel({ world: 0, level: 0 });
+    const { world, level } = this.props.params;
+    this.props.onSetLevel({ world, level });
   }
 
   componentWillReceiveProps(nextProps) {
@@ -300,7 +300,11 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     const playPauseIcon = running ? faPause : faPlay;
     const playPauseText = running ? 'Pause' : 'Start';
 
-    const { name, description, defaultScale, center = { x, y } } = this.props.level.info;
+    const { name, description, defaultScale, center = {} } = this.props.level.info;
+
+    const centerConst = !isNaN(center.x);
+    const centerXY = (centerConst && center) || ({ x, y });
+
     const time = pprintTime(tPrev);
     const startPause = () => running ? this.props.onPause() : this.props.onStart();
 
@@ -320,8 +324,8 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
           onDone={this.hidePassFailModal}
         />
         <PageHeader>
-          <Logo>[∂λ]</Logo>
-          {/* '∞Ω' */}
+          <Logo>[Σλ]</Logo>
+          {/* ' ∂ ∞Ω' */}
           <ControlButton
             disabled={cantRun}
             onClick={startPause}
@@ -352,7 +356,7 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
         >
           <WorldView
             objects={this.objectsFromVehicle(pose, this.props.level.actorsStates)}
-            center={center}
+            center={centerXY}
             defaultScale={defaultScale}
             width={this.state.splitWidth}
             height={540}
@@ -386,6 +390,10 @@ HomePage.propTypes = {
   onStep: PropTypes.func.isRequired,
   onSetCode: PropTypes.func.isRequired,
   level: PropTypes.object.isRequired,
+  params: {
+    world: PropTypes.string.isRequired,
+    level: PropTypes.string.isRequired,
+  },
 };
 
 const mapStateToProps = createSelector(

@@ -1,53 +1,37 @@
-import ego from '../actors/Ego';
+import EgoBase from './EgoBase';
 
-import Pose from '../sim/Pose';
 import Vector from '../sim/Vector';
-import Velocity from '../sim/Velocity';
 
 const defaultCode = `
 const PIDPathFollower = require('pid-path-follower');
 
 const pathFollower = new PIDPathFollower();
 
-const convertConesToPath = (cones, offset = 2) => cones.map(({ x, y, passOn }) => ({
-  position: { x: x + (passOn === 'left' ? -offset : offset), y, z: 0 },
-  orientation: { roll: 0, pitch: 0, yaw: 1.57 },
-}));
-
 function tick(ego, { state: { pose }, cones, color, timestamp }) {
   // if over the stop box, well, stop
   if (color === 'white') {
-    ego.setControls({ theta: 0, b: 5 });
     return;
+  } else {
+    const path = [{
+      position: { x: 0, y: 200 },
+    }];
+
+    pathFollower.setPose({ timestamp, pose });
+    pathFollower.setPath(path);
+    ego.setControls(pathFollower.computeControls());
   }
-
-  const path = convertConesToPath(cones);
-  const last = path.slice(-1)[0];
-  path.push({
-    position: { x: last.position.x, y: last.position.y + 50, z: 0 },
-    orientation: { roll: 0, pitch: 0, yaw: 1.57 },
-  });
-
-  pathFollower.setPose({
-    timestamp,
-    pose,
-  });
-  pathFollower.setPath(path);
-  ego.setControls(pathFollower.computeControls());
 }
 `.trim();
 
-
-const BOX_START_Y = 250;
-const BOX_STOP_Y = 350;
-
-const isInBox = y => y > BOX_START_Y && y < BOX_STOP_Y;
-
 const coneFuzz = (scale = 15) => (Math.random() - 0.5) * scale;
 
-export default class Slalom {
-  constructor(options={}) {
-    const { startX=50, startY=50, cones=6, dy=20 } = options;
+export default class Slalom extends EgoBase {
+  constructor(options = {}) {
+    super({
+      ...options,
+      finishY: (options.startY || 0) + 200,
+    });
+    const { startX = 0, startY = 0, cones = 6, dy = 20 } = options;
     const x = startX;
     let y = startY;
     let left;
@@ -57,74 +41,52 @@ export default class Slalom {
       return { x, y, passOn: left ? 'left' : 'right' };
     });
 
-    this.map = {
-      areas: [
-        {
-          type: 'rect',
-          name: 'Stop Box',
-          fillColor: '#aaa',
-          x: 320,
-          y: (BOX_START_Y + BOX_STOP_Y) / 2,
-          length: 640,
-          width: (BOX_STOP_Y - BOX_START_Y),
-        },
-        ...this.cones.map((cone, i) => ({
-          type: 'circle',
-          name: `Cone ${i}`,
-          fillColor: cone.passOn === 'left' ? '#d22' : '#22d',
-          x: cone.x,
-          y: cone.y,
-          radius: 1,
-        })),
-        ...this.cones.map((cone, i) => ({
-          type: 'circle',
-          name: `Cone Center ${i}`,
-          fillColor: '#eee',
-          x: cone.x,
-          y: cone.y,
-          radius: 0.3,
-        })),
-      ],
-    };
+    this.BOX_START_Y = startY + 200;
+    this.BOX_STOP_Y = startY + 230;
 
-    this.actors = [
-      ego({
-        state: {
-          pose: new Pose({
-            position: { x: 50, y: 50 },
-            orientation: { yaw: Math.PI / 2 },
-          }),
-          velocity: new Velocity(),
-        },
-      }),
+    this.map.areas = [
+      ...this.map.areas,
+      {
+        type: 'rect',
+        name: 'Stop Box',
+        fillColor: '#ccc',
+        x: startX,
+        y: (this.BOX_START_Y + this.BOX_STOP_Y) / 2,
+        length: 10,
+        width: (this.BOX_STOP_Y - this.BOX_START_Y),
+      },
+      ...this.cones.map((cone, i) => ({
+        type: 'circle',
+        name: `Cone ${i}`,
+        fillColor: cone.passOn === 'left' ? '#d22' : '#22d',
+        x: cone.x,
+        y: cone.y,
+        radius: 1,
+      })),
+      ...this.cones.map((cone, i) => ({
+        type: 'circle',
+        name: `Cone Center ${i}`,
+        fillColor: '#eee',
+        x: cone.x,
+        y: cone.y,
+        radius: 0.3,
+      })),
     ];
 
     this.conesPassed = {};
-    this.timeout = 60;
+  }
+
+  isInBox(y) {
+    return y > this.BOX_START_Y && y < this.BOX_STOP_Y;
   }
 
   info() {
     return {
-      name: 'Slalom',
-      description: 'Drive to the white box and then stop the vehicle. Stay left of red cones and right of the blue ones. The vehicle is equipped with a light sensor which will result in sensors.color === \'white\' when it is over the white  box.',
+      ...super.info(),
+      name: 'Ego Slaloms',
+      description: 'Drive Ego to the white box and then stop. Stay left of red cones and right of the blue ones. Ego is equipped with a light sensor which will set the value of `color` to `\'white\'` when it is over the white box.',
       defaultCode,
-      ego: {
-        asset: 'car02',
-        physics: {
-          name: 'bicycle',
-        },
-        name: 'ego',
-      },
-      display: [
-        {
-          type: 'points',
-          from: '/ego/pose',
-          fillColor: 'rgb(200, 50, 50)',
-          radius: 0.35,
-        },
-      ],
       timeout: 45,
-      defaultScale: 8,
     };
   }
 
@@ -136,7 +98,7 @@ export default class Slalom {
   getSensors({ pose }) {
     return {
       cones: this.cones,
-      color: isInBox(pose.y) ? 'white' : 'black',
+      color: this.isInBox(pose.y) ? 'white' : 'black',
     };
   }
 
@@ -166,13 +128,12 @@ export default class Slalom {
 
     const conesPassedCount = Object.keys(this.conesPassed).length;
 
-    const timedout = tPrev > this.timeout; // TODO: make non magic
-    const inBox = y > BOX_START_Y && y < BOX_STOP_Y;
+    const inBox = y > this.BOX_START_Y && y < this.BOX_STOP_Y;
     const stopped = Math.abs(v) < 0.05;
     const stoppedInBox = inBox && stopped;
     const passedAllCones = conesPassedCount === this.cones.length;
 
-    let fail = timedout || (stoppedInBox && !passedAllCones);
+    let fail = stoppedInBox && !passedAllCones;
     if (fail) {
       if (!stoppedInBox) {
         fail = `drive around the cones and stop in the box in under ${this.timeout} seconds`;
@@ -182,7 +143,7 @@ export default class Slalom {
     }
     return {
       fail,
-      pass: !timedout && stoppedInBox && passedAllCones,
+      pass: stoppedInBox && passedAllCones,
     };
   }
 }

@@ -1,5 +1,5 @@
+import Transform from '../transform';
 const Pose = require('../Pose');
-const createTransform = require('../transform');
 
 
 const step = ({ dt }, { vLeft = 0, vRight = 0, trackWidth, esp = 0.0001 }) => {
@@ -47,15 +47,15 @@ export default class DifferentialDriveModel {
       trackWidth: this.trackWidth,
       ...controls,
     };
-    const { dx = 0, dy = 0, dyaw = 0 } = step({ dt }, values);
+    const { dx, dy, dyaw } = step({ dt }, values);
     const dPose = new Pose({
       position: { x: dx, y: dy },
       orientation: { yaw: dyaw },
     });
-    const worldToVehicle = createTransform(pose);
-    const worldOriginInVehicleFrame = worldToVehicle(new Pose());
-    const vehicleToWorld = createTransform(worldOriginInVehicleFrame);
-    const nextPose = new Pose(vehicleToWorld(dPose));
+    const worldToVehicle = new Transform(pose);
+    const worldOriginInVehicleFrame = worldToVehicle.transform(new Pose());
+    const vehicleToWorld = new Transform(worldOriginInVehicleFrame);
+    const nextPose = new Pose(vehicleToWorld.transform(dPose));
     return {
       pose: nextPose,
     };

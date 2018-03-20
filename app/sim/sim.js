@@ -1,5 +1,6 @@
+import Transform from './transform';
+
 const { checkCollision } = require('./utils');
-const createTransform = require('./transform');
 const Pose = require('./Pose');
 
 const BicycleModel = require('./physics-models/bicycle').default;
@@ -20,8 +21,9 @@ const checkCollisions = (primary, others) => {
     return [];
   }
 
-  const egoToWorld = createTransform(createTransform(pose)(new Pose()));
-  const tfPolys = (list, tf) => list.map(poly => poly.map(p => tf(new Pose({ position: p }))));
+  // TODO: invert?
+  const egoToWorld = new Transform((new Transform(pose)).transform(new Pose()));
+  const tfPolys = (list, tf) => list.map(poly => poly.map(p => tf.transform(new Pose({ position: p }))));
   const egoCollisionPolys = tfPolys(egoCollisionPolysM, egoToWorld);
 
   return others.map(({
@@ -31,7 +33,7 @@ const checkCollisions = (primary, others) => {
     if (!obsCollisionPolysM || obsCollisionPolysM.length === 0) {
       return false;
     }
-    const obsToWorld = createTransform(createTransform(obsPose)(new Pose()));
+    const obsToWorld = new Transform((new Transform(obsPose)).transform(new Pose()));
     const obsCollisionPolys = tfPolys(obsCollisionPolysM, obsToWorld);
     return checkCollision(egoCollisionPolys, obsCollisionPolys);
   });
@@ -39,12 +41,13 @@ const checkCollisions = (primary, others) => {
 
 
 class Actor {
-  constructor({ name, physics, state, asset }, topics) {
+  constructor({ name, physics, state, asset, primaryCollider }, topics) {
     const Physics = loadPhysicsModel(physics.name);
     this.physics = new Physics(physics);
     this.name = name;
     this.state = state;
     this.asset = asset;
+    this.primaryCollider = primaryCollider;
 
     // TODO: not controls, but messages?
     this.controls = {};
@@ -90,6 +93,9 @@ class Simulator {
     }));
 
     const collisions = collisionActors.map((collActor, i) => {
+      if (!this.actors[i].primaryCollider) {
+        return [];
+      }
       const others = [...collisionActors.slice(0, i), {}, ...collisionActors.slice(i+1)];
       return checkCollisions(collActor, others);
     });
@@ -125,4 +131,4 @@ class Simulator {
 }
 
 
-module.exports = Simulator;
+export default Simulator;

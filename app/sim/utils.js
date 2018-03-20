@@ -1,4 +1,4 @@
-// const createTransform = require('./transform');
+// import Transform from './transform'
 // const Pose = require('./Pose');
 const Vector = require('./Vector');
 
@@ -38,8 +38,8 @@ module.exports.projectOGrid = (source, target) => {
     data[i] = 0;
   }
   const scale = target.resolution / source.resolution;
-  const worldToSource = createTransform(source.origin);
-  const sourceToTarget = createTransform(worldToSource(target.origin));
+  const worldToSource = new Transform(source.origin);
+  const sourceToTarget = new Transform(worldToSource.transform(target.origin));
   //source.data.forEach((v, idx) => {
   for (let idx = 0; idx < source.data.length; idx++) {
     const v = source.data[idx];

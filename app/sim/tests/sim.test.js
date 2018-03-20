@@ -1,11 +1,12 @@
+import Simulator from '../sim';
+import BicyclePathFollower from '../controllers/bicycle';
+
 const assert = require('assert');
 const EventEmitter = require('events');
 
-const BicyclePathFollower = require('../controllers/bicycle');
 const Pose = require('../Pose');
 const Velocity = require('../Velocity');
 
-const Simulator = require('../sim');
 const tolerant = (obj, esp = 0.001) => {
   const ret = {};
   Object.keys(obj).forEach(key => {
