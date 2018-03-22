@@ -5,16 +5,22 @@ import Vector from '../sim/Vector';
 const defaultCode = `
 const PIDPathFollower = require('pid-path-follower');
 
-const pathFollower = new PIDPathFollower();
+const pathFollower = new PIDPathFollower({
+  p: -0.05,
+  i: 0,
+  d: -0.2,
+  targetSpeed: 2,
+});
 
 function tick(ego, { state: { pose }, cones, color, timestamp }) {
   // if over the stop box, well, stop
   if (color === 'white') {
     return;
   } else {
-    const path = [{
-      position: { x: 0, y: 200 },
-    }];
+    const path = [
+      { position: { x: 0, y: 0 } },
+      { position: { x: 0, y: 200 } },
+    ];
 
     pathFollower.setPose({ timestamp, pose });
     pathFollower.setPath(path);
@@ -61,7 +67,7 @@ export default class Slalom extends EgoBase {
         fillColor: cone.passOn === 'left' ? '#d22' : '#22d',
         x: cone.x,
         y: cone.y,
-        radius: 1,
+        radius: 0.6,
       })),
       ...this.cones.map((cone, i) => ({
         type: 'circle',
@@ -69,7 +75,7 @@ export default class Slalom extends EgoBase {
         fillColor: '#eee',
         x: cone.x,
         y: cone.y,
-        radius: 0.3,
+        radius: 0.2,
       })),
     ];
 
@@ -84,7 +90,7 @@ export default class Slalom extends EgoBase {
     return {
       ...super.info(),
       name: 'Ego Slaloms',
-      description: 'Drive Ego to the white box and then stop. Stay left of red cones and right of the blue ones. Ego is equipped with a light sensor which will set the value of `color` to `\'white\'` when it is over the white box.',
+      description: 'Drive Ego to the white box and then stop. Stay left of red cones and right of the blue ones. Ego is equipped with a light sensor which will set the value of `color` to `\'white\'` when it is over the white box.\n\nYou might find it helpful to the use the `PIDPathFollower` class, which when given a series of points, will calculate controls to follow the path. The values of `p`, `i`, and `d` control how the tightly the vehicle will follow the path. See [wikipedia](https://en.wikipedia.org/wiki/PID_controller) for more info.\n\nAlso note, this level is dynamic, so hitting the **Regenerate** button will place the cones in different locations. Can you write an algorithim that works for many different cone configurations? ',
       defaultCode,
       timeout: 45,
     };

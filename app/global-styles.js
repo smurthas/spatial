@@ -2,6 +2,8 @@ import { injectGlobal } from 'styled-components';
 
 /* eslint no-unused-expressions: 0 */
 injectGlobal`
+  @import url('https://fonts.googleapis.com/css?family=Inconsolata');
+
   html,
   body {
     height: 100%;
@@ -10,13 +12,9 @@ injectGlobal`
   }
 
    body, .modalMarkdown>p {
-    font-family: 'Courier New', monospace, sans-serif;
+    font-family: 'Inconsolata', 'Courier New', monospace, sans-serif;
     background: #151515;
     color: #EBEBEB;
-  }
-
-  body.fontLoaded {
-    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
 
   [data-reactroot] {
@@ -36,6 +34,7 @@ injectGlobal`
   }
 
   .CodeMirror {
+    font-family: 'Inconsolata', 'Courier New', monospace, sans-serif;
     height: 100%;
   }
   .CodeMirror-syntax-error {
@@ -60,22 +59,22 @@ injectGlobal`
   }
 
   .Resizer.horizontal {
-      height: 11px;
-      margin: -5px 0;
-      border-top: 5px solid rgba(255, 255, 255, 0);
-      border-bottom: 5px solid rgba(255, 255, 255, 0);
-      cursor: row-resize;
-      width: 100%;
+    height: 11px;
+    margin: -5px 0;
+    border-top: 5px solid rgba(255, 255, 255, 0);
+    border-bottom: 5px solid rgba(255, 255, 255, 0);
+    cursor: row-resize;
+    width: 100%;
   }
 
   .Resizer.vertical {
-      margin: 0 -5px;
-      display: inline-block;
-      background-color: #333;
-      flex: 0 0 11px;
-      border-left: 5px solid rgba(255, 255, 255, 0);
-      border-right: 5px solid rgba(255, 255, 255, 0);
-      cursor: col-resize;
+    margin: 0 -5px;
+    display: inline-block;
+    background-color: #333;
+    flex: 0 0 11px;
+    border-left: 5px solid rgba(255, 255, 255, 0);
+    border-right: 5px solid rgba(255, 255, 255, 0);
+    cursor: col-resize;
   }
 
 `;

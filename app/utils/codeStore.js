@@ -1,13 +1,38 @@
 
 const store = window.localStorage;
 
+const KEY = 'spatial-code';
+const SUB_KEY = 'values';
+
+const CURRENT_VERSION = '0.0.0';
+
 const getAllCode = () => {
   try {
-    const codeStr = store.getItem('code');
-    return JSON.parse(codeStr) || [];
+    const codeStr = store.getItem(KEY);
+    const all = JSON.parse(codeStr) || {};
+    if (all.version === CURRENT_VERSION) {
+      return all[SUB_KEY] || [];
+    }
+
+    // TODO: migrate?
   } catch (err) {
-    return [];
+    // TODO: handle?
   }
+  return [];
+};
+
+const setAllCode = (allCode) => {
+  try {
+    const all = {
+      version: CURRENT_VERSION,
+      [SUB_KEY]: allCode,
+    };
+    store.setItem(KEY, JSON.stringify(all));
+    return true;
+  } catch (err) {
+    // TODO: handle this?
+  }
+  return false;
 };
 
 const getCodeForLevel = ({ world, level }) => {
@@ -19,11 +44,7 @@ const saveCodeForLevel = ({ world, level, code }) => {
   const allCode = getAllCode();
   allCode[world] = allCode[world] || [];
   allCode[world][level] = code;
-  try {
-    store.setItem('code', JSON.stringify(allCode));
-  } catch (err) {
-    // TODO: handle this?
-  }
+  return setAllCode(allCode);
 };
 
 export {

@@ -27,8 +27,10 @@ export default class DiffDriveSafetyController {
       // if we are still backing up, do that, don't listen to command
       if (backupSteps > 0) {
         topics.emit(publishControlsTopic, {
-          vLeft: -0.1,
-          vRight: -0.1,
+          wheelSpeeds: {
+            left: -0.1,
+            right: -0.1,
+          },
         });
         return;
       }
@@ -36,8 +38,10 @@ export default class DiffDriveSafetyController {
       // otherwise, calculate wheel speeds from angular and linear speeds
       const dv = angular * trackWidth / 2;
       const controls = {
-        vLeft: linear - dv,
-        vRight: linear + dv,
+        wheelSpeeds: {
+          left: linear - dv,
+          right: linear + dv,
+        },
       };
       topics.emit(publishControlsTopic, controls);
     });

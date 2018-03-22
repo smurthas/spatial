@@ -38,7 +38,7 @@ export default class HelloTopics extends EgoBase {
     return {
       ...super.info(),
       name: 'Hello Topics!',
-      description: 'Modify the `controls` message in the `onInit` function to make the car drive into the white box.',
+      description: 'Modify the `controls` message in the `tick` function to make Ego drive to the finish line.',
       defaultCode,
       timeout: 15,
     };

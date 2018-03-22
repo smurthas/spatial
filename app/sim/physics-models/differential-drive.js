@@ -2,19 +2,19 @@ import Transform from '../transform';
 const Pose = require('../Pose');
 
 
-const step = ({ dt }, { vLeft = 0, vRight = 0, trackWidth, esp = 0.0001 }) => {
+const step = ({ dt }, { wheelSpeeds: { left = 0, right = 0 } = {}, trackWidth, esp = 0.0001 }) => {
   // driving straight (enough)
-  if (Math.abs(vLeft - vRight) < esp) {
+  if (Math.abs(left - right) < esp) {
     return {
-      dx: vLeft * dt,
+      dx: left * dt,
       dy: 0,
       dyaw: 0,
     };
   }
 
-  const vSlow = Math.min(vLeft, vRight);
-  const vFast = Math.max(vLeft, vRight);
-  const sign = vLeft > vRight ? -1 : 1;
+  const vSlow = Math.min(left, right);
+  const vFast = Math.max(left, right);
+  const sign = left > right ? -1 : 1;
   const rBase = trackWidth / (vFast / vSlow - 1);
   const rPose = rBase + (trackWidth / 2);
 

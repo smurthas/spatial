@@ -123,7 +123,7 @@ const nextLevel = (state) => {
     window.location = `/challenges/${world}/${level + 1}`;
   } else if (world + 1 < Worlds.length) {
     // next world
-    window.location = `/challenges/${world + 1}/${level}`;
+    window.location = `/challenges/${world + 1}/0`;
   } else {
     // completed all
     window.location = '/completed-all';
@@ -229,6 +229,8 @@ const setCode = (state, { code }) => {
   return reset(withCode.delete('syntaxError'));
 };
 
+const resetCodeToDefault = (state) => setCode(state, { code: state.get('info').defaultCode });
+
 const levelReducerActions = {
   reset,
   regen,
@@ -236,6 +238,7 @@ const levelReducerActions = {
   nextLevel,
   start,
   pause,
+  resetCodeToDefault,
   step: (state, { times = 2 }) => {
     let finalState = state;
     for (let i = 0; i < times; i++) {

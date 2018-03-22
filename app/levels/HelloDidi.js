@@ -18,8 +18,10 @@ function tick(didi, { state }) {
 
   // publish the controls message to wheels
   didi.setControls({
-    vLeft: 0.2, // speed of the left wheel
-    vRight: 0.185, // speed of the right wheel
+    wheelSpeeds: {
+      left: 0.2, // speed of the left wheel
+      right: 0.185, // speed of the right wheel
+    },
   });
 }
 `.trim();

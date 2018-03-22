@@ -107,8 +107,8 @@ describe('<HomePage />', () => {
     homePage.props().onSetLevel({ world: 0, level: 1 });
 
     // Move forward on first level
-    replaceInCode('vLeft: 0.2,', 'vLeft: 1,');
-    replaceInCode('vRight: 0.185,', 'vRight: 0.98,');
+    replaceInCode('left: 0.2,', 'left: 1,');
+    replaceInCode('right: 0.185,', 'right: 0.98,');
     assertTime(0);
     for (let i = 0; i < 38; i++) {
       step();

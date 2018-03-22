@@ -38,6 +38,7 @@ import {
   pause,
   step,
   setCode,
+  resetCodeToDefault,
 } from './actions';
 
 import WorldView from '../../components/WorldView';
@@ -45,6 +46,7 @@ import LevelModal from '../../components/LevelModal';
 import { BaseButton } from '../../components/Buttons';
 import { PoseField } from '../../components/TextDisplay';
 import CodeEditor from '../../components/CodeEditor';
+import GithubCorner from '../../components/GithubCorner';
 
 import { computeOGridFromPoses } from '../../sim/utils';
 // import Pose from '../../sim/Pose';
@@ -128,11 +130,13 @@ const ogridRects = (ogrid, fillColor) => {
 };
 */
 
+
 class HomePage extends React.PureComponent { // eslint-disable-line react/prefer-stateless-function
   constructor() {
     super();
     this.setSplitWidth = this.setSplitWidth.bind(this);
     this.showLevelInfo = this.showLevelInfo.bind(this);
+    this.promptResetCode = this.promptResetCode.bind(this);
     this.hideLevelInfo = this.hideLevelInfo.bind(this);
     this.hidePassFailModal = this.hidePassFailModal.bind(this);
 
@@ -278,6 +282,13 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     ];
   }
 
+  promptResetCode() {
+    const confirmed = confirm('Reset code to level default?'); /* eslint no-alert: 0 */
+    if (confirmed) {
+      this.props.onResetCodeToDefault();
+    }
+  }
+
   showLevelInfo() {
     this.setState({ showLevelInfo: true });
   }
@@ -311,6 +322,7 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     const cantRun = !!(done || syntaxError);
     return (
       <div style={{ height: '100%' }}>
+        <GithubCorner href="https://github.com/smurthas/spatial" />
         <LevelModal
           show={this.state.showLevelInfo}
           name={name}
@@ -364,7 +376,8 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
           <div style={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
             <div style={{ flex: '0 1 auto', padding: 10 }}>
               <span style={{ fontWeight: 'bold' }}>{name}</span>
-              <BaseButton onClick={this.showLevelInfo}> show info </BaseButton>
+              <BaseButton style={{ marginLeft: 14 }} onClick={this.showLevelInfo}> show info </BaseButton>
+              <BaseButton style={{ marginLeft: 10 }} onClick={this.promptResetCode}> reset code </BaseButton>
             </div>
             <div style={{ marginLeft: 5, flex: '1 1 auto', height: '100%', overflowY: 'scroll' }}>
               <CodeEditor
@@ -389,6 +402,7 @@ HomePage.propTypes = {
   onPause: PropTypes.func.isRequired,
   onStep: PropTypes.func.isRequired,
   onSetCode: PropTypes.func.isRequired,
+  onResetCodeToDefault: PropTypes.func.isRequired,
   level: PropTypes.object.isRequired,
   params: {
     world: PropTypes.string.isRequired,
@@ -411,6 +425,7 @@ function mapDispatchToProps(dispatch) {
     onPause: () => dispatch(pause()),
     onStep: () => dispatch(step()),
     onSetCode: (code) => dispatch(setCode(code)),
+    onResetCodeToDefault: () => dispatch(resetCodeToDefault()),
   };
 }
 

@@ -1,29 +1,29 @@
-# Roboland!
+# SPATIAL [Σλ]
 
-Roboland is for learning about programming robots! There are several challenges
-that you can progress through, each one requires learning a new algorithm or
-technique in robotics.
+Spatial is a game in which you program robots! There are several challenges
+to progress through, each one requires learning a new algorithm or technique in
+robotics.
+
+[Play Spatial here!](http://spatialgame.xyz)
+
+![This is Spatial!](./internals/screen-shot.png)
 
 
 ## Development
 
 This is a WIP, contributions welcomed!
 
-TODO:
+To start it, open a terminal and run
 
-* […] Differential drive clean up level
-  * [ ] Percentage completed counter
-  * [ ] Sound when hit new square?
-* [x] Replace onSensors w tick, convert levels
-* [ ] Collision is failure
-* [ ] Shadows
-* [ ] Better visualization of cones and course for Slalom
-* [ ] Pan, recenter/follow
-* [ ] Publish to domain
-* [ ] Another scenario
+```bash
+npm start
+```
+
+and then open [http://localhost:3000](http://localhost:3000) in a browser.
+
 
 ## License
 
-This project is licensed under the MIT license, Copyright (c) 2017 Maximilian
-Stoiber (react boilerplate) and Simon Murtha Smith (everything else). For more
+This project is licensed under the MIT license, Copyright (c) 2018 Simon Murtha
+Smith (and Maximilian Stoiber for react boilerplate portion). For more
 information see `LICENSE.md`.

@@ -9,4 +9,5 @@ export function start() { return { type: 'start' }; }
 export function pause() { return { type: 'pause' }; }
 export function step() { return { type: 'step' }; }
 export function setCode(code) { return { type: 'setCode', code }; }
+export function resetCodeToDefault() { return { type: 'resetCodeToDefault' }; }
 

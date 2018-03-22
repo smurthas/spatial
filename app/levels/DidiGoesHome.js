@@ -4,8 +4,10 @@ const defaultCode =`
 function tick(didi, { state }) {
   // publish the controls message to wheels
   didi.setControls({
-    vLeft: 0.2, // speed of the left wheel
-    vRight: 0.185, // speed of the right wheel
+    wheelSpeeds: {
+      left: 0.2, // speed of the left wheel
+      right: 0.185, // speed of the right wheel
+    },
   });
 }
 `.trim();
@@ -46,7 +48,7 @@ export default class DidiGoesHome extends DidiBase {
     return {
       ...super.info(),
       name: 'Didi Heads Home',
-      description: 'Drive Didi back to the charger!',
+      description: 'Drive Didi back to the charger!\n\nThe `tick` function will get called every time the game clock advances. Within the `tick` function, you can control Didi by setting the left and right wheel speeds with the `didi.setControls` function. If the left speed is greater than right, Didi will turn right and vice versa.',
       defaultCode,
       display: [
         {
