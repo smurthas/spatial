@@ -247,7 +247,7 @@ export default class WorldView extends Component {
     return (
       <div
         ref={div => { this.div = div; }}
-        style={{ display: 'flex', flexFlow: 'column', height: '100%' }}
+        style={{ display: 'flex', flexFlow: 'column', height: '100%', userSelect: 'none' }}
         onMouseEnter={setShowHUD}
         onMouseOver={setShowHUD}
         onFocus={setShowHUD}

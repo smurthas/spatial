@@ -69,7 +69,7 @@ export default class HelloDidi extends DidiBase {
     return {
       ...super.info(),
       name: 'Didi Cleans Up',
-      description: 'Drive Didi over at least 75% of the room in less than 5 minutes to to get everything clean!',
+      description: 'Drive Didi over at least 75% of the room in less than 5 minutes to get everything clean!',
       defaultCode,
       display: [
         {

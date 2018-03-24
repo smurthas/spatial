@@ -75,6 +75,7 @@ const PageHeader = styled.div`
   flex: 0 1 auto;
   height: 45px;
   overflow: hidden;
+  user-select: none;
 `;
 
 const Logo = styled.div`
@@ -374,7 +375,7 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
             height={540}
           />
           <div style={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
-            <div style={{ flex: '0 1 auto', padding: 10 }}>
+            <div style={{ flex: '0 1 auto', padding: 10, userSelect: 'none' }}>
               <span style={{ fontWeight: 'bold' }}>{name}</span>
               <BaseButton style={{ marginLeft: 14 }} onClick={this.showLevelInfo}> show info </BaseButton>
               <BaseButton style={{ marginLeft: 10 }} onClick={this.promptResetCode}> reset code </BaseButton>
