@@ -73,6 +73,7 @@ module.exports = (options) => ({
       'process.env': {
         NODE_ENV: JSON.stringify(process.env.NODE_ENV),
       },
+      'process.env.SOLUTION_URL': JSON.stringify(process.env.SPATIAL_SOLUTION_URL),
     }),
     new webpack.NamedModulesPlugin(),
   ]),

@@ -8,6 +8,7 @@ import Transform from '../../sim/transform';
 import Worlds from '../../levels';
 
 import { saveCodeForLevel, getCodeForLevel } from '../../utils/codeStore';
+import { postCodeForLevel } from '../../utils/solutions';
 
 class SynchronousEmitter {
   constructor() {
@@ -132,12 +133,20 @@ const nextLevel = (state) => {
   return state;
 };
 
-const start = (state) => state.set('running', true);
+const start = (state) => {
+  setTimeout(() => postCodeForLevel({ prefix: 'start', state }), 1);
+  return state.set('running', true);
+};
 const pause = (state) => state.set('running', false);
-const pass = (state, { message }) =>
-  pause(state.set('passed', message).set('failed', false));
-const fail = (state, { message }) =>
-  pause(state.set('passed', false).set('failed', message));
+const pass = (state, { message }) => {
+  setTimeout(() => postCodeForLevel({ prefix: 'pass', state }), 1);
+  return pause(state.set('passed', message).set('failed', false));
+};
+const fail = (state, { message }) => {
+  setTimeout(() => postCodeForLevel({ prefix: 'fail', state }), 1);
+  return pause(state.set('passed', false).set('failed', message));
+};
+
 
 const stepOnce = (state) => {
   const pose = state.get('pose').toJS();

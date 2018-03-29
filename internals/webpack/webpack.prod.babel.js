@@ -3,6 +3,14 @@ const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const OfflinePlugin = require('offline-plugin');
+const colors = require('colors/safe');
+
+
+if (!process.env.SPATIAL_SOLUTION_URL) {
+  /* eslint no-console: 0 */
+  console.error(colors.red.bold('WARNING: environment variable SPATIAL_SOLUTION_URL is missing in production build!'));
+  console.error();
+}
 
 module.exports = require('./webpack.base.babel')({
   // In production, we skip all hot-reloading stuff
