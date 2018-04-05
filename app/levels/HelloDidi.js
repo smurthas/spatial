@@ -11,16 +11,15 @@ const beepSound = new Howl({
 });
 
 const defaultCode =`
-function tick(didi, { state }) {
-  if (state.collision) {
+function tick({ didi }) {
+  if (didi.collision) {
     // TODO: maybe do something if Didi bumps into a wall?
   }
 
-  // publish the controls message to wheels
   didi.setControls({
     wheelSpeeds: {
-      left: 0.2, // speed of the left wheel
-      right: 0.185, // speed of the right wheel
+      left: 1.0,
+      right: 1.0,
     },
   });
 }
@@ -69,7 +68,7 @@ export default class HelloDidi extends DidiBase {
     return {
       ...super.info(),
       name: 'Didi Cleans Up',
-      description: 'Drive Didi over at least 75% of the room in less than 5 minutes to get everything clean!',
+      description: 'Drive Didi over at least 75% of the room in less than *5 minutes* to get everything clean! If Didi bumps into anything, the value of `didi.collision` will be `true`. ',
       defaultCode,
       display: [
         {

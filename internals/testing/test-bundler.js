@@ -2,6 +2,12 @@
 // (ES7 generator support is required by redux-saga)
 import 'babel-polyfill';
 
+const ls = {};
+global.window.localStorage = {
+  setItem(k, v) { ls[k] = v; },
+  getItem(k) { return ls[k]; },
+};
+
 /* setup.js */
 /*
 const { jsdom } = require('jsdom');

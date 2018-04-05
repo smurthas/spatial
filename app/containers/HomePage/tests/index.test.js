@@ -10,6 +10,13 @@ import sinon from 'sinon';
 import { Provider } from 'react-redux';
 import { browserHistory } from 'react-router';
 
+// must be set before imports
+/* eslint import/first: 0 */
+global.window.localStorage = {
+  setItem() {},
+  getItem() {},
+};
+
 import configureStore from '../../../store';
 import ConnectedHomePage, { HomePage } from '../index';
 import assets from '../../../assets';
@@ -81,7 +88,7 @@ describe('<HomePage />', () => {
           reset: () => homePage.find('button[value="Reset"]').simulate('click'),
           assertTime: t => {
             const text = homePage.find('#sim-time').text().replace(/[^0-9]/g, '');
-            expect(Math.abs((parseInt(text, 10) / 1000) - t)).toBeLessThan(0.001);
+            expect(parseInt(text, 10) / 100).toBeNearlyEqualTo(t);
           },
           assertPose: ({ x, y, yaw }) => {
             const xVal = parseFloat(homePage.find('#sim-pose').find('.sim-pose-x').text());
@@ -99,16 +106,38 @@ describe('<HomePage />', () => {
     });
   });
 
+  it('should pass the first level', () => {
+    const { homePage, step, assertTime, replaceInCode } = createPage({ world: 0, level: 1 });
+    // once to start, then once to set the level
+    expect(ConnectedHomePage.prototype.render.callCount).toEqual(2);
+
+    homePage.props().onSetLevel({ world: 0, level: 0 });
+
+    // Move forward on first level
+    replaceInCode('TURN_LEFT_UNTIL_X = 0.7', 'TURN_LEFT_UNTIL_X = 0.3');
+    replaceInCode(`const TURN_LEFT = {
+  wheelSpeeds: { left: 0.2, right: 1.0`, `const TURN_LEFT = {
+  wheelSpeeds: { left: 0.78, right: 1.55`);
+    replaceInCode('right: 1.0', 'right: 1.005');
+    assertTime(0);
+    for (let i = 0; i < 29; i++) {
+      step();
+      assertTime((i+1) * 0.1);
+    }
+
+    expect(!!homePage.prop('level').passed).toEqual(true);
+    expect(!!homePage.prop('level').failed).toEqual(false);
+  });
+
   it('should stop when it collides', () => {
     const { homePage, step, assertTime, assertPose, replaceInCode } = createPage({ world: 0, level: 1 });
     // once to start, then once to set the level
-    expect(ConnectedHomePage.prototype.render.callCount).toEqual(2);
+    // expect(ConnectedHomePage.prototype.render.callCount).toEqual(2);
 
     homePage.props().onSetLevel({ world: 0, level: 1 });
 
     // Move forward on first level
-    replaceInCode('left: 0.2,', 'left: 1,');
-    replaceInCode('right: 0.185,', 'right: 0.98,');
+    replaceInCode('right: 1.0,', 'right: 0.98,');
     assertTime(0);
     for (let i = 0; i < 38; i++) {
       step();
@@ -134,12 +163,6 @@ describe('<HomePage />', () => {
     for (let i = 0; i < 149; i++) {
       step();
     }
-    assertTime(15);
-
-    expect(homePage.prop('level').passed).toEqual(false);
-    expect(homePage.prop('level').failed).toEqual(false);
-
-    step();
     assertTime(15);
 
     expect(homePage.prop('level').passed).toEqual(false);

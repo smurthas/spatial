@@ -10,6 +10,7 @@ import gridTexture from './grid.png';
 import plantTexture from './plant.png';
 import tireTexture from './tire.png';
 import treeTexture from './tree.png';
+import housePlant01 from './housePlant01.png';
 
 // home map tiles
 import carpetBeige01Texture from './carpetBeige01.png';
@@ -17,6 +18,7 @@ import carpetBeige01Texture from './carpetBeige01.png';
 // furniture
 import bed01Texture from './furniture/bed01.png';
 import sofa01 from './furniture/sofa01.png';
+import sideTable01 from './furniture/sideTable01.png';
 
 // vehicles
 import car01Texture from './car01.png';
@@ -48,26 +50,37 @@ const textures = {
   plant: { src: plantTexture, height: 64, width: 64, scale: 10 },
   tire: { src: tireTexture, height: 64, width: 64, scale: 32 },
   tree: { src: treeTexture, height: 64, width: 64, scale: 12 },
+  housePlant01: {
+    src: housePlant01,
+    scale: 600,
+    collisionPolys: [
+    ],
+  },
 
   // home map tiles
-  carpetBeige01: { src: carpetBeige01Texture, height: 632, width: 632, scale: 1230 },
+  carpetBeige01: {
+    src: carpetBeige01Texture,
+    height: 632,
+    width: 632,
+    scale: 1230,
+  },
 
   // furniture
   bed01: {
     src: bed01Texture,
-    scale: 840,
+    scale: 420,
     collisionPolys: [
       [
-        { x: 64, y: 0 },
-        { x: 64, y: 400 },
-        { x: 2436, y: 400 },
-        { x: 2436, y: 0 },
+        { x: 27, y: 0 },
+        { x: 27, y: 192 },
+        { x: 1218, y: 192 },
+        { x: 1218, y: 0 },
       ],
       [
-        { x: 560, y: 400 },
-        { x: 560, y: 1535 },
-        { x: 1940, y: 1535 },
-        { x: 1940, y: 400 },
+        { x: 276, y: 192 },
+        { x: 276, y: 767 },
+        { x: 970, y: 767 },
+        { x: 970, y: 192 },
       ],
     ],
   },
@@ -76,10 +89,26 @@ const textures = {
     scale: 450,
     collisionPolys: [
       [
-        { x: 60, y: 60 },
-        { x: 60, y: 480 },
-        { x: 940, y: 480 },
-        { x: 940, y: 60 },
+        { x: 48, y: 56 },
+        { x: 48, y: 464 },
+        { x: 940, y: 464 },
+        { x: 940, y: 56 },
+      ],
+    ],
+  },
+  sideTable01: {
+    src: sideTable01,
+    scale: 800,
+    collisionPolys: [
+      [
+        { x: 10, y: 250 },
+        { x: 80, y: 420 },
+        { x: 250, y: 490 },
+        { x: 420, y: 420 },
+        { x: 490, y: 250 },
+        { x: 420, y: 80 },
+        { x: 250, y: 10 },
+        { x: 80, y: 80 },
       ],
     ],
   },
@@ -109,7 +138,7 @@ const textures = {
   },
   diffDriveCharger: {
     src: diffDriveChargerTexture,
-    scale: 4000,
+    scale: 1333,
   },
   setLoadedCallback: cb => {
     textures.loadedCallback = cb;

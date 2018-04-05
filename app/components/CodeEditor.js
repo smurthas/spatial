@@ -34,6 +34,10 @@ export default class CodeEditor extends Component {
       return true;
     }
 
+    if (this.props.disabled !== nextProps.disabled) {
+      return true;
+    }
+
     const hadSyntaxError = this.props.syntaxError;
     const hasSyntaxError = nextProps.syntaxError;
     const addRemoveSyntaxError = (!hadSyntaxError && hasSyntaxError) ||
@@ -88,12 +92,17 @@ export default class CodeEditor extends Component {
   render() {
     const { code } = this.props;
     return (
-      <CodeMirror
-        value={code}
-        onBeforeChange={this.onChange}
-        options={codeMirrorOptions}
-        editorDidMount={this.setEditor}
-      />
+      <div style={{ opacity: this.props.disabled ? 0.4 : 1 }}>
+        <CodeMirror
+          value={code}
+          onBeforeChange={this.onChange}
+          options={{
+            ...codeMirrorOptions,
+            readOnly: this.props.disabled,
+          }}
+          editorDidMount={this.setEditor}
+        />
+      </div>
     );
   }
 }
@@ -102,5 +111,6 @@ CodeEditor.propTypes = {
   onCodeChange: PropTypes.func.isRequired,
   code: PropTypes.string.isRequired,
   syntaxError: PropTypes.object,
+  disabled: PropTypes.bool,
 };
 

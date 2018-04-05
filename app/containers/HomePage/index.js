@@ -14,7 +14,9 @@ import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
+import Markdown from 'react-markdown';
 import leftPad from 'left-pad';
+import copy from 'clipboard-copy';
 
 // import EventEmitter from 'events';
 
@@ -26,6 +28,11 @@ import faUndo from '@fortawesome/fontawesome-free-solid/faUndo';
 import faRandom from '@fortawesome/fontawesome-free-solid/faRandom';
 import faStopWatch from '@fortawesome/fontawesome-free-solid/faStopwatch';
 import faCompass from '@fortawesome/fontawesome-free-regular/faCompass';
+import faBan from '@fortawesome/fontawesome-free-solid/faBan';
+import faLink from '@fortawesome/fontawesome-free-solid/faLink';
+import faMinusSquare from '@fortawesome/fontawesome-free-regular/faMinusSquare';
+import faPlusSquare from '@fortawesome/fontawesome-free-regular/faPlusSquare';
+import faWindowClose from '@fortawesome/fontawesome-free-regular/faWindowClose';
 
 import styled from 'styled-components';
 
@@ -42,18 +49,21 @@ import {
 } from './actions';
 
 import WorldView from '../../components/WorldView';
-import LevelModal from '../../components/LevelModal';
 import { BaseButton } from '../../components/Buttons';
+import { FlashMessage } from '../../components/Flash';
 import { PoseField } from '../../components/TextDisplay';
 import CodeEditor from '../../components/CodeEditor';
 import GithubCorner from '../../components/GithubCorner';
 
 import { computeOGridFromPoses } from '../../sim/utils';
-// import Pose from '../../sim/Pose';
 
-// import assets from '../../assets';
+import { publishSolutionForLevel, getSolutionForLevel } from '../../utils/solutions';
+import { getUserAndToken } from '../../utils/user';
+import sha from '../../utils/sha';
 
-const DEFAULT_SPLIT_WIDTH = 580;
+const GAME_URL = process.env.SPATIAL_GAME_URL;
+
+const DEFAULT_SPLIT_WIDTH = 545;
 
 const lpad = (n, w) => leftPad(n, w, '0');
 const pprintTime = elapsed => {
@@ -63,12 +73,13 @@ const pprintTime = elapsed => {
   const et = (Math.round(elapsed * 1000) + 0.01) / 1000;
   const mins = Math.floor(et / 60);
   const secs = Math.floor(et - (mins * 60));
-  const msecs = Math.round((et - secs - (mins * 60))*1000);
-  return `${lpad(mins, 2)}:${lpad(secs, 2)}.${lpad(msecs, 3)}s`;
+  const msecs = Math.round((et - secs - (mins * 60))*100);
+  return `${lpad(mins, 2)}:${lpad(secs, 2)}.${lpad(msecs, 2)}s`;
 };
 
 const PageHeader = styled.div`
   padding: 6px;
+  padding-top: 4px;
   margin: 2px;
   font-size: 16px;
   border-bottom: 1px solid #333;
@@ -80,8 +91,8 @@ const PageHeader = styled.div`
 
 const Logo = styled.div`
   display: inline-block;
-  vertical-align: middle;
-  padding-right: 40px;
+  vertical-align: -0.04em;
+  padding-right: 20px;
   padding-left: 10px;
   font-size: 24px;
 `;
@@ -89,11 +100,12 @@ const Logo = styled.div`
 const HeaderDivider = styled.span`
   padding-left: 10px;
   padding-right: 10px;
+  vertical-align: 0.1em;
 `;
 
-const ControlButton = ({ disabled=false, onClick, icon, text }) => (
+const ControlButton = ({ disabled=false, onClick, icon, text, style = {} }) => (
   <BaseButton
-    style={{ margin: '0px 14px', textAlign: 'left' }}
+    style={{ margin: '0px 14px', textAlign: 'left', ...style }}
     disabled={disabled}
     value={text}
     onClick={onClick}
@@ -107,6 +119,7 @@ ControlButton.propTypes = {
   onClick: PropTypes.func.isRequired,
   icon: PropTypes.object.isRequired,
   text: PropTypes.string.isRequired,
+  style: PropTypes.object,
 };
 
 
@@ -138,42 +151,70 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     this.setSplitWidth = this.setSplitWidth.bind(this);
     this.showLevelInfo = this.showLevelInfo.bind(this);
     this.promptResetCode = this.promptResetCode.bind(this);
+    this.shareSolution = this.shareSolution.bind(this);
     this.hideLevelInfo = this.hideLevelInfo.bind(this);
-    this.hidePassFailModal = this.hidePassFailModal.bind(this);
 
     this.state = {
       splitWidth: DEFAULT_SPLIT_WIDTH,
       showLevelInfo: true,
-      showPassFailModal: false,
+      showActorBoundingBoxes: false, // no UI to change right now, just for debug
     };
   }
 
   componentWillMount() {
-    const { world, level } = this.props.params;
-    this.props.onSetLevel({ world, level });
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const { passed, failed } = this.props.level;
-    const alreadyPassedOrFailed = passed || failed;
-    const nowPassedOrFailed = nextProps.level.passed || nextProps.level.failed;
-    const justPassedOrFailed = !alreadyPassedOrFailed && nowPassedOrFailed;
-    if (justPassedOrFailed) {
-      this.setState({
-        showPassFailModal: true,
+    const { world, level, codeUUID, user } = this.props.params;
+    if (codeUUID) {
+      this.setState({ editorDisabled: true });
+      getSolutionForLevel({ world, level, user, sha: codeUUID }, (err1, r) => {
+        this.setState({ editorDisabled: false });
+        if (err1 || !r.code) {
+          // TODO: 404 or alert or just redirect to non-sha url?
+          this.props.onSetLevel({ world, level, code: '// Error loading code...' });
+        } else {
+          this.props.onSetLevel({ world, level, code: r.code });
+        }
       });
+    } else {
+      this.props.onSetLevel({ world, level });
     }
   }
 
   componentDidUpdate() {
     if (this.props.level.running) {
       // TODO: no settimeout to make testing better?
-      setTimeout(() => this.props.onStep(), 1);
+      setTimeout(() => {
+        if (this.props.level.running) {
+          this.props.onStep();
+        }
+      }, 1);
     }
+  }
+
+  setCodeFlash({ message = null, level = null } = {}) {
+    this.setState({
+      codeFlashMessage: message,
+      codeFlashLevel: level,
+    });
   }
 
   setSplitWidth(splitWidth) {
     this.setState({ splitWidth });
+  }
+
+  getActorBoundingBoxPolys() {
+    if (!this.state.showActorBoundingBoxes) {
+      return [];
+    }
+
+    const { actorsStates = [], actors = [] } = this.props.level;
+    return actors.map(({ draw, asset }, i) => ({
+      x: actorsStates[i].pose.position.x,
+      y: actorsStates[i].pose.position.y,
+      heading: actorsStates[i].pose.orientation && actorsStates[i].pose.orientation.yaw || 0,
+      collisionPolysM: asset.collisionPolysM,
+      fillColor: 'rgba(222, 62, 62, 0.6)',
+      type: 'poly',
+    }));
   }
 
   objectsFromVehicle() {
@@ -229,25 +270,6 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
       heading: actorsStates[i].pose.orientation && actorsStates[i].pose.orientation.yaw,
     }));
 
-    /*
-    const actorBBoxes = actors.map(({ draw, asset }, i) => ({
-      x: actorsStates[i].pose.position.x,
-      y: actorsStates[i].pose.position.y,
-      heading: actorsStates[i].pose.orientation && actorsStates[i].pose.orientation.yaw || 0,
-      collisionPolysM: asset.collisionPolysM,
-      fillColor: 'rgba(192, 92, 92, 0.9)',
-      type: 'poly',
-    }));
-    */
-    const { obstacles = [] } = map;
-    /*
-     * const obsBBoxes = obstacles.map(obs => ({
-      ...obs,
-      fillColor: 'rgba(192, 92, 92, 0.9)',
-      type: 'poly',
-    }));
-    */
-
     return [
       ...map.areas,
       ...(this.state.path || []).map(({ position }, i) => ({
@@ -259,35 +281,43 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
         radius: 0.5,
       })),
       ...([].concat(...levelMarkers)), // flatten since each is an array
-      ...(obstacles || []),
       ...drawnActors,
-      //...actorBBoxes,
-      // ...(obsBBoxes || []),
-      /*{
-        type: 'img',
-        name: 'Ego',
-        asset,
-        x: vehicle.x,
-        y: vehicle.y,
-        heading: vehicle.yaw,
-      },
-      {
-        type: 'poly',
-        name: 'ego-col',
-        asset,
-        fillColor: 'rgba(92, 92, 192, 0.9)',
-        x: vehicle.x,
-        y: vehicle.y,
-        heading: vehicle.yaw,
-      },*/
+      ...this.getActorBoundingBoxPolys(),
     ];
   }
 
   promptResetCode() {
-    const confirmed = confirm('Reset code to level default?'); /* eslint no-alert: 0 */
+    // eslint-disable-next-line no-alert
+    const confirmed = confirm('Reset code to level default?');
     if (confirmed) {
+      const { level, world } = this.props.level;
+      this.props.router.push(`/_/${world}/${level}`);
       this.props.onResetCodeToDefault();
     }
+  }
+
+  shareSolution() {
+    const { level, world, code } = this.props.level;
+    // TODO:
+    const { user, token } = getUserAndToken();
+    const sliceTo = user === '_' ? 12 : 6;
+    const shaValue = sha(code).slice(0, sliceTo);
+    const path = `/${user}/${world}/${level}/${shaValue}`;
+    const url = `${GAME_URL}${path}`;
+    copy(url);
+    publishSolutionForLevel({ world, level, code, user, token }, (err, { sha: shaFromServer } = {}) => {
+      if (err) {
+        // TODO: show error?
+        this.setCodeFlash({ message: 'Failed to publish solution :(', level: 'error' });
+      } else if (shaFromServer !== shaValue) {
+        // TODO: hmm, waaat??
+        this.setCodeFlash({ message: 'Failed to publish solution :(', level: 'error' });
+      } else {
+        this.props.router.push(path);
+        this.setCodeFlash({ message: `Copied ${url} to clipboard`, level: 'ok' });
+      }
+      setTimeout(() => this.setCodeFlash(), 10000);
+    });
   }
 
   showLevelInfo() {
@@ -298,13 +328,6 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     this.setState({ showLevelInfo: false });
   }
 
-  hidePassFailModal() {
-    this.setState({ showPassFailModal: false });
-    if (this.props.level.passed) {
-      this.props.onNextLevel();
-    }
-  }
-
   render() {
     const { running, pose, passed, failed, tPrev, code, syntaxError } = this.props.level;
     const { x, y, yaw } = pose;
@@ -312,7 +335,11 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     const playPauseIcon = running ? faPause : faPlay;
     const playPauseText = running ? 'Pause' : 'Start';
 
-    const { name, description, defaultScale, center = {} } = this.props.level.info;
+    const {
+      name, defaultScale, center = {}, dynamic, timeout, defaultCode, description,
+    } = this.props.level.info;
+
+    const isDefaultCode = code.trim() === defaultCode.trim();
 
     const centerConst = !isNaN(center.x);
     const centerXY = (centerConst && center) || ({ x, y });
@@ -321,24 +348,26 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     const startPause = () => running ? this.props.onPause() : this.props.onStart();
 
     const cantRun = !!(done || syntaxError);
+
+    const worldFlashLevel = (failed && 'error') || (passed && 'ok') || '';
+    const timedout = failed && (tPrev >= timeout);
+
     return (
       <div style={{ height: '100%' }}>
         <GithubCorner href="https://github.com/smurthas/spatial" />
-        <LevelModal
-          show={this.state.showLevelInfo}
-          name={name}
-          description={description}
-          onDone={this.hideLevelInfo}
-        />
-        <LevelModal
-          show={this.state.showPassFailModal}
-          name={passed? 'Level Completed!' : 'Failed, Try Again!'}
-          description={passed || failed || ''}
-          onDone={this.hidePassFailModal}
-        />
+
         <PageHeader>
           <Logo>[Σλ]</Logo>
           {/* ' ∂ ∞Ω' */}
+          <FontAwesomeIcon
+            style={{ marginLeft: 4, marginRight: 10, color: timedout ? '#C71F24' : '' }}
+            icon={faStopWatch}
+          />
+          <span style={{ color: timedout ? '#C71F24' : '' }} id="sim-time" >{time}</span>
+          <HeaderDivider>|</HeaderDivider>
+          <FontAwesomeIcon style={{ marginLeft: 4, marginRight: 10 }} icon={faCompass} />
+          <PoseField id="sim-pose" x={x} y={y} yaw={yaw} />
+          <HeaderDivider>|</HeaderDivider>
           <ControlButton
             disabled={cantRun}
             onClick={startPause}
@@ -351,14 +380,18 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
             icon={faStepForward}
             text="Step"
           />
-          <ControlButton onClick={() => this.props.onReset()} icon={faUndo} text="Reset" />
-          <ControlButton onClick={() => this.props.onRegen()} icon={faRandom} text="Regenerate" />
-          <HeaderDivider>|</HeaderDivider>
-          <FontAwesomeIcon style={{ marginLeft: 4, marginRight: 10 }} icon={faStopWatch} />
-          <span id="sim-time">{time}</span>
-          <HeaderDivider>|</HeaderDivider>
-          <FontAwesomeIcon style={{ marginLeft: 4, marginRight: 10 }} icon={faCompass} />
-          <PoseField id="sim-pose" x={x} y={y} yaw={yaw} />
+          <ControlButton
+            onClick={() => this.props.onReset()}
+            disabled={tPrev === 0}
+            icon={faUndo}
+            text="Reset"
+          />
+          <ControlButton
+            onClick={() => this.props.onRegen()}
+            disabled={!dynamic}
+            icon={faRandom}
+            text="Regenerate"
+          />
         </PageHeader>
 
         <SplitPane
@@ -373,17 +406,67 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
             defaultScale={defaultScale}
             width={this.state.splitWidth}
             height={540}
+            flashLevel={worldFlashLevel}
+            flashMessage={passed || failed}
+            flashButtonMessage={passed ? 'next level' : null}
+            onFlashButton={() => this.props.onNextLevel()}
           />
+
           <div style={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
-            <div style={{ flex: '0 1 auto', padding: 10, userSelect: 'none' }}>
-              <span style={{ fontWeight: 'bold' }}>{name}</span>
-              <BaseButton style={{ marginLeft: 14 }} onClick={this.showLevelInfo}> show info </BaseButton>
-              <BaseButton style={{ marginLeft: 10 }} onClick={this.promptResetCode}> reset code </BaseButton>
+            <div style={{ flex: '0 1 auto', padding: 10, userSelect: 'none', fontSize: 14 }}>
+              <ControlButton
+                style={{ float: 'right' }}
+                onClick={this.shareSolution}
+                text="Publish"
+                icon={faLink}
+              />
+              <ControlButton
+                style={{ float: 'right' }}
+                onClick={this.promptResetCode}
+                icon={faBan}
+                text="Reset Code"
+                disabled={isDefaultCode}
+              />
+              <span style={{ fontWeight: 'bold', textDecoration: 'underline' }}>{name}</span>
+              <ControlButton
+                style={{ display: this.state.showLevelInfo ? 'none' : 'inline-block' }}
+                onClick={this.showLevelInfo}
+                icon={faPlusSquare}
+                text="show level info"
+              />
+
+              <FlashMessage
+                style={{ paddingRight: 15, textAlign: 'right' }}
+                level={this.state.codeFlashMessage && this.state.codeFlashLevel}
+              >
+                {this.state.codeFlashMessage}
+                <ControlButton
+                  onClick={() => this.setCodeFlash()}
+                  icon={faWindowClose}
+                />
+              </FlashMessage>
             </div>
+            <div style={{ paddingLeft: 10, paddingRight: 10, display: this.state.showLevelInfo ? 'block' : 'none' }}>
+              <Markdown className="modalMarkdown" source={description} />
+              <ControlButton
+                style={{ float: 'right' }}
+                onClick={this.hideLevelInfo}
+                icon={faMinusSquare}
+                text="hide level info"
+              />
+            </div>
+
             <div style={{ marginLeft: 5, flex: '1 1 auto', height: '100%', overflowY: 'scroll' }}>
               <CodeEditor
                 code={code}
-                onCodeChange={value => this.props.onSetCode(value)}
+                disabled={this.state.editorDisabled}
+                onCodeChange={value => {
+                  if (this.props.params.codeUUID) {
+                    const { level, world } = this.props.level;
+                    this.props.router.push(`/_/${world}/${level}`);
+                  }
+                  this.props.onSetCode(value);
+                }}
                 syntaxError={this.props.level.syntaxError}
               />
             </div>
@@ -409,6 +492,7 @@ HomePage.propTypes = {
     world: PropTypes.string.isRequired,
     level: PropTypes.string.isRequired,
   },
+  router: PropTypes.object.isRequired,
 };
 
 const mapStateToProps = createSelector(
@@ -420,7 +504,7 @@ function mapDispatchToProps(dispatch) {
   return {
     onReset: () => dispatch(reset()),
     onRegen: () => dispatch(regen()),
-    onSetLevel: ({ world, level }) => dispatch(setLevel({ world, level })),
+    onSetLevel: (a) => dispatch(setLevel(a)),
     onNextLevel: () => dispatch(nextLevel()),
     onStart: () => dispatch(start()),
     onPause: () => dispatch(pause()),

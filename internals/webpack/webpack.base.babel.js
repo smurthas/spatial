@@ -72,6 +72,7 @@ module.exports = (options) => ({
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: JSON.stringify(process.env.NODE_ENV),
+        SPATIAL_GAME_URL: JSON.stringify(options.gameUrl),
       },
       'process.env.SOLUTION_URL': JSON.stringify(process.env.SPATIAL_SOLUTION_URL),
     }),

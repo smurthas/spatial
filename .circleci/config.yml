@@ -6,13 +6,7 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
       - image: circleci/node:7.10
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mongo:3.4.4
 
     working_directory: ~/repo
 
@@ -33,6 +27,30 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      # run tests!
-      - run: yarn test
+      - run:
+          name: Run tests
+          command: yarn test
+
+      - run:
+          name: Build static site
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              export SPATIAL_GAME_URL=http://$PROD_DOMAIN
+            else
+              export SPATIAL_GAME_URL=http://$STAGING_DOMAIN
+            fi
+            npm run build
+
+      - deploy:
+          name: Deploy to S3
+          command: |
+            sudo apt-get update && sudo apt-get install -qq -y python-pip libpython-dev
+            curl -O https://bootstrap.pypa.io/get-pip.py && sudo python get-pip.py
+            sudo pip install -q awscli --upgrade
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              export BUCKET=$PROD_DOMAIN
+            else
+              export BUCKET=$STAGING_DOMAIN
+            fi
+            aws s3 cp ~/repo/build s3://$BUCKET/ --recursive --acl public-read
 

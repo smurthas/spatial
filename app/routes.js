@@ -34,7 +34,23 @@ export default function createRoutes(store) {
         importModules.catch(errorLoading);
       },
     }, {
-      path: '/challenges/:world/:level',
+      path: '/_/:world/:level',
+      name: 'challenges',
+      getComponent(nextState, cb) {
+        const importModules = Promise.all([
+          import('containers/HomePage'),
+        ]);
+
+        const renderRoute = loadModule(cb);
+
+        importModules.then(([component]) => {
+          renderRoute(component);
+        });
+
+        importModules.catch(errorLoading);
+      },
+    }, {
+      path: '/:user/:world/:level/:codeUUID',
       name: 'challenges',
       getComponent(nextState, cb) {
         const importModules = Promise.all([

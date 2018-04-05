@@ -57,6 +57,9 @@ module.exports = require('./webpack.base.babel')({
   performance: {
     hints: false,
   },
+
+  // TODO: dynamic ports and stuff?
+  gameUrl: 'http://localhost:3000',
 });
 
 /**

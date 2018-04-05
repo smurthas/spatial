@@ -1,14 +1,26 @@
 import DidiBase from './DidiBase';
 
 const defaultCode =`
-function tick(didi, { state }) {
-  // publish the controls message to wheels
-  didi.setControls({
-    wheelSpeeds: {
-      left: 0.2, // speed of the left wheel
-      right: 0.185, // speed of the right wheel
-    },
-  });
+const TURN_LEFT_UNTIL_X = 0.7;
+
+// When right speed > left, Didi turns left
+const TURN_LEFT = {
+  wheelSpeeds: { left: 0.2, right: 1.0 }
+};
+
+// When left and right speed are equal, Didi goes straight
+const GO_STRAIGHT = {
+  wheelSpeeds: { left: 1.0, right: 1.0 }
+};
+
+// called every 0.05 seconds of game time
+function tick({ didi, timestamp }) {
+  // At first, turn left. Once Didi has turned enough, go straight.
+  if (didi.pose.position.x > TURN_LEFT_UNTIL_X) {
+    didi.setControls(TURN_LEFT);
+  } else {
+    didi.setControls(GO_STRAIGHT);
+  }
 }
 `.trim();
 
@@ -27,7 +39,7 @@ export default class DidiGoesHome extends DidiBase {
       name: 'baseboard',
       asset: 'diffDriveCharger',
       x: this.endX,
-      y: this.endY,
+      y: this.endY - 0.043,
       heading: Math.PI,
     });
   }
@@ -48,7 +60,7 @@ export default class DidiGoesHome extends DidiBase {
     return {
       ...super.info(),
       name: 'Didi Heads Home',
-      description: 'Drive Didi back to the charger!\n\nThe `tick` function will get called every time the game clock advances. Within the `tick` function, you can control Didi by setting the left and right wheel speeds with the `didi.setControls` function. If the left speed is greater than right, Didi will turn right and vice versa.',
+      description: 'Program Didi to drive back to the charger in the bottom left corner of the bedroom!\n\nThe `tick` function will get called every time the game clock advances. Within the `tick` function, you can control Didi by setting the left and right wheel speeds by calling `didi.setControls`. Didi has two wheels that can be controlled independently, so setting them to different speeds will cause Didi to turn in one direction or the other:\n\n```\nleft < right: ↺\nleft > right: ↻\nleft = right: ↑\n```\n\nYou could use `timestamp` or `didi.pose` values to decide whether to turn or go straight.',
       defaultCode,
       display: [
         {

@@ -64,7 +64,8 @@ try {
 } catch(err) {}
 return robot;
 `;
-  const fn = new Function('require', wrappedCode); /* eslint no-new-func: 0 */
+  // eslint-disable-next-line no-new-func
+  const fn = new Function('require', wrappedCode);
   return fn.call(evalThis, localRequire);
 }
 
@@ -74,7 +75,8 @@ const newSimulatorFromState = () => {
   try {
     onInit(topics);
   } catch (err) {
-    console.error('Error executing onInit', err); /* eslint no-console: 0 */
+    // eslint-disable-next-line no-console
+    console.error('Error executing onInit', err);
   }
 
   simulator = new Simulator({
@@ -97,7 +99,7 @@ const reset = (state) => {
 // just set to existing level to generate a new level
 const regen = (state) => setLevel(state, state.toJS());
 
-const setLevel = (state, { world: rawWorld, level: rawLevel }) => {
+const setLevel = (state, { world: rawWorld, level: rawLevel, code }) => {
   const world = parseInt(rawWorld, 10);
   const level = parseInt(rawLevel, 10);
   const Level = Worlds[world].levels[level];
@@ -105,14 +107,15 @@ const setLevel = (state, { world: rawWorld, level: rawLevel }) => {
   const info = levelObject.info();
   const { defaultCode } = info;
 
-  const userCode = getCodeForLevel({ world, level });
   const map = fromJS(levelObject.map);
   const withNextLevel = state.set('level', level)
                              .set('world', world)
                              .set('map', map)
                              .set('actors', levelObject.actors)
                              .set('info', info);
-  return setCode(withNextLevel, { code: userCode || defaultCode });
+
+  const userCode = getCodeForLevel({ world, level });
+  return setCode(withNextLevel, { code: code || userCode || defaultCode });
 };
 
 const nextLevel = (state) => {
@@ -121,10 +124,10 @@ const nextLevel = (state) => {
   const w = Worlds[world];
   if (level + 1 < w.levels.length) {
     // next level in world
-    window.location = `/challenges/${world}/${level + 1}`;
+    window.location = `/_/${world}/${level + 1}`;
   } else if (world + 1 < Worlds.length) {
     // next world
-    window.location = `/challenges/${world + 1}/0`;
+    window.location = `/_/${world + 1}/0`;
   } else {
     // completed all
     window.location = '/completed-all';
@@ -150,7 +153,10 @@ const fail = (state, { message }) => {
 
 const stepOnce = (state) => {
   const pose = state.get('pose').toJS();
-  const { timeout = 60, ego: { actorsIndex = 0 } } = state.get('info');
+  const {
+    timeout = 60,
+    ego: { actorsIndex = 0, name: egoName },
+  } = state.get('info');
   const egoState = state.get('actorsStates').toJS()[actorsIndex];
   const stepCount = state.get('stepCount') + 1;
   const next = state.set('stepCount', stepCount);
@@ -163,17 +169,16 @@ const stepOnce = (state) => {
   }
   const stepStartingState = next.set('tPrev', tPrev);
 
-  const { pass: passMessage=false, fail: failMessage=false } = levelObject.checkGoal(state.toJS()) || {};
+  const { pass: passMessage=false, fail: failMessage=false } = levelObject.checkGoal(stepStartingState.toJS()) || {};
   if (passMessage) {
-    const message = `Goal completed in ${Math.round(tPrev*10)/10} seconds!`;
-    return pass(pause(state), { message });
+    const message = `Goal completed in ${Math.round(tPrev*100)/100} seconds!`;
+    return pass(pause(stepStartingState), { message });
   } else if (failMessage) {
     const message = `Failed to complete the goal: ${failMessage}`;
-    return fail(pause(state), { message });
+    return fail(pause(stepStartingState), { message });
   }
 
   const tickInput = {
-    state: egoState,
     ...levelObject.getSensors({
       pose,
     }),
@@ -184,8 +189,13 @@ const stepOnce = (state) => {
   const { tick = () => undefined } = robot;
   const ego = {
     setControls: ctrls => topics.emit(`/${actorsNames[actorsIndex]}/controls`, ctrls),
+    ...egoState,
   };
-  tick(ego, tickInput, publish);
+  const input = {
+    ...tickInput,
+    [egoName]: ego,
+  };
+  tick(input, publish);
 
   const actorsStates = stepStartingState.get('actorsStates').toJS();
   const newActorsStates = simulator.step(dt, actorsStates);
@@ -218,7 +228,9 @@ const setCode = (state, { code }) => {
     parseScript(code);
     parsed = true;
   } catch (parseErr) {
-    console.error('User code parsing err', parseErr); /* eslint no-console: 0 */
+    // eslint-disable-next-line no-console
+    console.error('User code parsing err', parseErr);
+    // eslint-disable-next-line no-console
     console.log(code.split('\n')[parseErr.lineNumber - 1]);
     return reset(withCode.set('syntaxError', parseErr));
   }
@@ -227,7 +239,8 @@ const setCode = (state, { code }) => {
     try {
       robot = evalCode(code);
     } catch (err) {
-      console.error('User code runtime err', err); /* eslint no-console: 0 */
+      // eslint-disable-next-line no-console
+      console.error('User code runtime err', err);
     }
   }
 

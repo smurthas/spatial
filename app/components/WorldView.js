@@ -3,12 +3,13 @@ import PropTypes from 'prop-types';
 import styled from 'styled-components';
 
 import { Position } from './TextDisplay';
+import { FlashMessage, FlashButton } from './Flash';
 
 import assets from '../assets';
 
 
 const AxesLabel = styled.div`
-  font-size: 8px;
+  font-size: 12px;
   position: absolute;
 `;
 
@@ -39,6 +40,7 @@ export default class WorldView extends Component {
   componentDidMount() {
     this.drawState(this.props);
     window.addEventListener('resize', () => this.drawState(this.props));
+    assets.setLoadedCallback(() => this.setState({ loaded: true }));
   }
 
   componentWillReceiveProps({ defaultScale }) {
@@ -260,8 +262,9 @@ export default class WorldView extends Component {
           style={{
             display: showHUD ? 'block': 'none',
             position: 'absolute',
-            top: 10,
+            bottom: 2,
             right: 10,
+            zIndex: 200,
           }}
         >
           <div><ZoomButton onClick={() => this.zoomIn()}>[+]</ZoomButton></div>
@@ -273,13 +276,31 @@ export default class WorldView extends Component {
             position: 'absolute',
             bottom: 2,
             right: 10,
+            zIndex: 100,
           }}
         >
           <Position x={this.state.mouse.x} y={this.state.mouse.y} />
         </div>
-        <AxesLabel style={{ bottom: 1, left: 32 }}>x</AxesLabel>
-        <AxesLabel style={{ bottom: 29, left: 7 }}>y</AxesLabel>
+
+        <AxesLabel style={{ zIndex: 100, position: 'absolute', bottom: 1, left: 32 }}>x</AxesLabel>
+        <AxesLabel style={{ zIndex: 100, position: 'absolute', bottom: 29, left: 7 }}>y</AxesLabel>
+
+        <FlashMessage
+          style={{ top: 0, left: 0 }}
+          level={this.props.flashLevel}
+        >
+          <FlashButton
+            style={{
+              float: 'right',
+              opacity: this.props.flashLevel ? 1 : 0,
+            }}
+            onClick={() => this.props.onFlashButton()}
+          > {this.props.flashButtonMessage} </FlashButton>
+          {this.props.flashMessage}
+        </FlashMessage>
+
         <canvas
+          style={{ position: 'absolute', top: 0, left: 0 }}
           ref={canvas => { this.canvas = canvas; }}
         />
       </div>
@@ -289,5 +310,9 @@ export default class WorldView extends Component {
 
 WorldView.propTypes = {
   defaultScale: PropTypes.number,
+  flashLevel: PropTypes.string,
+  flashMessage: PropTypes.string,
+  flashButtonMessage: PropTypes.string,
+  onFlashButton: PropTypes.func,
 };
 

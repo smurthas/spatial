@@ -34,9 +34,9 @@ Position.propTypes = {
 
 const PoseField = ({ x, y, yaw, id }) => (
   <span id={id}>
-    <PoseValue name="x" value={x} />
-    <PoseValue name="y" value={y} />
-    <PoseValue name="yaw" value={yaw} />
+    <PoseValue name="x" value={x} len={6} />
+    <PoseValue name="y" value={y} len={6} />
+    <PoseValue name="yaw" value={yaw} len={6} />
   </span>
 );
 

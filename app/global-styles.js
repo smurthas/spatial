@@ -17,6 +17,10 @@ injectGlobal`
     color: #EBEBEB;
   }
 
+  .modalMarkdown>p  {
+    font-size: 13px;
+  }
+
   [data-reactroot] {
     height: 100%;
   }

@@ -7,7 +7,7 @@ const store = window.localStorage;
 const KEY = 'spatial-uuid';
 
 // value inserted at compile time
-const url = process.env.SOLUTION_URL;
+const API_URL = process.env.SOLUTION_URL;
 
 let id = uuid();
 
@@ -17,18 +17,19 @@ try {
     id = tmpId;
   }
 } catch (err) {
-  /* eslint no-empty: 0 */
+  // eslint-disable-line no-empty
 }
 
 try {
   store.setItem(KEY, id);
 } catch (err) {
-  console.error('error saving id to local storage:', err); /* eslint no-console: 0 */
+  // eslint-disable-next-line no-console
+  console.error('error saving id to local storage:', err);
 }
 
 const postCodeForLevel = ({ prefix, state }) => {
   try {
-    if (!url) {
+    if (!API_URL) {
       return;
     }
     const world = state.get('world');
@@ -37,7 +38,7 @@ const postCodeForLevel = ({ prefix, state }) => {
     const s = sha('sha256').update(code).digest('hex');
     const filename = `${id}/${prefix}/${world}/${level}/${s}.json`;
     request.post({
-      url,
+      url: API_URL,
       json: {
         filename,
         data: {
@@ -47,14 +48,38 @@ const postCodeForLevel = ({ prefix, state }) => {
       },
     }, (err) => {
       if (err) {
-        console.error('Error posting code:', err); /* eslint no-console: 0 */
+        // eslint-disable-next-line no-console
+        console.error('Error posting code:', err);
       }
     });
   } catch (err) {
-    console.error('caught error posting code: ', err); /* eslint no-console: 0 */
+    // eslint-disable-next-line no-console
+    console.error('caught error posting code: ', err);
   }
+};
+
+const publishSolutionForLevel = ({ level, world, code, user = '_', token }, callback) => {
+  request.post({
+    url: `${API_URL}/${user}/solutions/${world}/${level}`,
+    headers: {
+      'x-spatial-token': token,
+    },
+    json: {
+      code,
+    },
+  }, (err, resp, body) => callback(err, body));
+};
+
+const getSolutionForLevel = ({ world, level, sha: shaValue, user = '_' }, callback) => {
+  request.get({
+    url: `${API_URL}/${user}/solutions/${world}/${level}/${shaValue}`,
+    json: true,
+  }, (err, resp, json) => callback(err, json));
 };
 
 export {
   postCodeForLevel,
+  getSolutionForLevel,
+  publishSolutionForLevel,
 };
+

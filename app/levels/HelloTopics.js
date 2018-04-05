@@ -1,7 +1,7 @@
 import EgoBase from './EgoBase';
 
 const defaultCode =`
-function tick(ego) {
+function tick({ ego }) {
   // TODO: set the acceleration value of the controls
   ego.setControls({
     a: 0.2, // acceleration of the car
@@ -37,8 +37,8 @@ export default class HelloTopics extends EgoBase {
   info() {
     return {
       ...super.info(),
-      name: 'Hello Topics!',
-      description: 'Modify the `controls` message in the `tick` function to make Ego drive to the finish line.',
+      name: 'Hello Ego!',
+      description: 'Modify the controls values in the `tick` function to make Ego drive to the finish line in less than *15 seconds*.',
       defaultCode,
       timeout: 15,
     };
@@ -46,7 +46,7 @@ export default class HelloTopics extends EgoBase {
 
   checkGoal({ pose, tPrev=0 }) {
     const fail = tPrev >= this.timeout &&
-        `need to reach the box in < ${this.timeout} seconds -- try accelerating faster!`;
+        `need to reach the finish line in < ${this.timeout} seconds -- try accelerating faster!`;
     const pass = !fail && pose.y > this.finishY;
     return { pass, fail };
   }

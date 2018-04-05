@@ -71,11 +71,12 @@ FlickeringText.propTypes = {
 class TitlePage extends React.PureComponent { // eslint-disable-line react/prefer-stateless-function
 
   componentWillMount() {
-    document.addEventListener('keydown', () => this.startGame());
+    // start game on Enter/Return key
+    document.addEventListener('keydown', e => e.keyCode === 13 && this.startGame());
   }
 
   startGame() {
-    this.props.router.push('/challenges/0/0');
+    this.props.router.push('/_/0/0');
   }
 
   render() {

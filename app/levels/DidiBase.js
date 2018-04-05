@@ -1,8 +1,10 @@
-
 import didi from '../actors/Didi';
 import wall from '../actors/Wall';
 import bed01 from '../actors/Bed01';
 import sofa01 from '../actors/Sofa01';
+import sideTable01 from '../actors/SideTable01';
+import housePlant01 from '../actors/HousePlant01';
+
 
 export default class DidiBase {
   constructor(options = {}) {
@@ -138,6 +140,28 @@ export default class DidiBase {
             position: {
               x: this.originX + 2.5,
               y: this.originY + 3.42,
+            },
+          },
+        },
+      }),
+      sideTable01({
+        name: 'sideTable',
+        state: {
+          pose: {
+            position: {
+              x: this.originX + 1.1,
+              y: this.originY + 3.42,
+            },
+          },
+        },
+      }),
+      housePlant01({
+        name: 'housePlant',
+        state: {
+          pose: {
+            position: {
+              x: this.originX + 1.12,
+              y: this.originY + 3.5,
             },
           },
         },

@@ -9,21 +9,27 @@ const pathFollower = new PIDPathFollower({
   p: -0.05,
   i: 0,
   d: -0.2,
-  targetSpeed: 2,
+  targetSpeed: 2, // the speed that the car should accelerate up to
 });
 
-function tick(ego, { state: { pose }, cones, color, timestamp }) {
-  // if over the stop box, well, stop
+function tick({ ego, cones, color, timestamp }) {
   if (color === 'white') {
-    return;
+    // TODO: make Ego stop!
   } else {
     const path = [
-      { position: { x: 0, y: 0 } },
-      { position: { x: 0, y: 200 } },
+      { position: { x: 0, y: 0 } }, // starting point
+
+      // TODO: you'll probably need to insert some additional points here!
+
+      { position: { x: 0, y: 200 } }, // a point 200m ahead of the start
     ];
 
-    pathFollower.setPose({ timestamp, pose });
+    // this path follower needs the current pose to compute new controls
+    pathFollower.setPose({ timestamp, pose: ego.pose });
+
+    // it also needs the desired path
     pathFollower.setPath(path);
+
     ego.setControls(pathFollower.computeControls());
   }
 }
@@ -90,9 +96,10 @@ export default class Slalom extends EgoBase {
     return {
       ...super.info(),
       name: 'Ego Slaloms',
-      description: 'Drive Ego to the white box and then stop. Stay left of red cones and right of the blue ones. Ego is equipped with a light sensor which will set the value of `color` to `\'white\'` when it is over the white box.\n\nYou might find it helpful to the use the `PIDPathFollower` class, which when given a series of points, will calculate controls to follow the path. The values of `p`, `i`, and `d` control how the tightly the vehicle will follow the path. See [wikipedia](https://en.wikipedia.org/wiki/PID_controller) for more info.\n\nAlso note, this level is dynamic, so hitting the **Regenerate** button will place the cones in different locations. Can you write an algorithim that works for many different cone configurations? ',
+      description: 'Drive Ego to the white box and then stop. Stay *left of red cones and right of the blue ones*.\n\nEgo is equipped with a light sensor which will set the value of `color` to `\'white\'` when it is over the white box.\n\nYou might find it helpful to the use the `PIDPathFollower` class, which when given a series of points, will calculate controls to follow the path. The values of `p`, `i`, and `d` control how the tightly the vehicle will follow the path. See [wikipedia](https://en.wikipedia.org/wiki/PID_controller) for more info.\n\nAlso note, this level is dynamic, so hitting the **Regenerate** button will place the cones in different locations. Can you write an algorithim that works for many different cone configurations? ',
       defaultCode,
       timeout: 45,
+      dynamic: true,
     };
   }
 

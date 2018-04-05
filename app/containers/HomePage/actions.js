@@ -1,8 +1,8 @@
 
 export function reset() { return { type: 'reset' }; }
 export function regen() { return { type: 'regen' }; }
-export function setLevel({ world, level }) {
-  return { type: 'setLevel', world, level };
+export function setLevel({ world, level, code }) {
+  return { type: 'setLevel', world, level, code };
 }
 export function nextLevel() { return { type: 'nextLevel' }; }
 export function start() { return { type: 'start' }; }
