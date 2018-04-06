@@ -118,7 +118,7 @@ describe('<HomePage />', () => {
     replaceInCode(`const TURN_LEFT = {
   wheelSpeeds: { left: 0.2, right: 1.0`, `const TURN_LEFT = {
   wheelSpeeds: { left: 0.78, right: 1.55`);
-    replaceInCode('right: 1.0', 'right: 1.005');
+    replaceInCode('right: 1.0', 'right: 1.0065');
     assertTime(0);
     for (let i = 0; i < 29; i++) {
       step();

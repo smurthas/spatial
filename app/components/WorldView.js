@@ -102,10 +102,10 @@ export default class WorldView extends Component {
   }
 
   drawCircle({ context, x, y, radius }) {
-    const ctr = this.worldToCanvas({ x, y });
+    const { scale } = this.state;
     const radCanvas = radius * this.state.scale;
     context.beginPath();
-    context.arc(ctr.x, ctr.y, radCanvas, 0, Math.PI * 2);
+    context.arc(x * scale, -y * scale, radCanvas, 0, Math.PI * 2);
     context.fill();
   }
 
@@ -170,12 +170,21 @@ export default class WorldView extends Component {
         }
         const { collisionPolysM } = object;
         if (collisionPolysM) {
-          collisionPolysM.forEach(points => {
-            this.drawPolygon({
-              ...object,
-              points,
-              context: ctx,
-            });
+          collisionPolysM.forEach(poly => {
+            if (poly.center) {
+              this.drawCircle({
+                x: poly.center.x,
+                y: poly.center.y,
+                radius: poly.radius,
+                context: ctx,
+              });
+            } else {
+              this.drawPolygon({
+                ...object,
+                points: poly,
+                context: ctx,
+              });
+            }
           });
         }
       } else if (object.type === 'img') {
@@ -189,8 +198,15 @@ export default class WorldView extends Component {
           context: ctx,
         });
       } else if (object.type === 'circle') {
+        const { x: xPx, y: yPx } = this.worldToCanvas(object);
+        ctx.translate(xPx, yPx);
+        if (object.heading) {
+          ctx.rotate(-object.heading);
+        }
         this.drawCircle({
           ...object,
+          x: 0,
+          y: 0,
           context: ctx,
         });
       }

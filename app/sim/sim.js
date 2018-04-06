@@ -23,7 +23,16 @@ const checkCollisions = (primary, others) => {
 
   // TODO: invert?
   const egoToWorld = new Transform((new Transform(pose)).transform(new Pose()));
-  const tfPolys = (list, tf) => list.map(poly => poly.map(p => tf.transform(new Pose({ position: p }))));
+  const tfPolys = (list, tf) => list.map(poly => {
+    if (poly.center) {
+      const center = tf.transform(new Pose({ position: poly.center })).position;
+      return {
+        center,
+        radius: poly.radius,
+      };
+    }
+    return poly.map(p => tf.transform(new Pose({ position: p })));
+  });
   const egoCollisionPolys = tfPolys(egoCollisionPolysM, egoToWorld);
 
   return others.map(({

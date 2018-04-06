@@ -71,6 +71,34 @@ module.exports.projectOGrid = (source, target) => {
 };
 */
 
+const checkCircleAndCircle = (c1, c2) => {
+  const d = (new Vector(c1.center).minus(new Vector(c2.center))).magnitude();
+  return d > (c1.radius + c2.radius);
+};
+
+const checkBoxAndCircleDivides = (bbox1, circle) => {
+  const { center, radius } = circle;
+  const d = new Vector(center);
+
+  for (let i = 0; i < bbox1.length; i++) {
+    const a = new Vector(bbox1[i].position);
+    const b = new Vector(bbox1[(i+1) % bbox1.length].position);
+    const heading = Math.atan2(b.y - a.y, b.x - a.x) + (Math.PI/2);
+    const v = new Vector({ x: Math.cos(heading), y: Math.sin(heading) });
+    const c = new Vector(bbox1[(i+2) % bbox1.length].position);
+    const bbox1Sign = v.dot(c.minus(a));
+
+    const ad = d.minus(a);
+    const dot = v.dot(ad);
+    const sameSign = dot * bbox1Sign > 0;
+    if (Math.abs(dot) > radius && !sameSign) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const checkCollisionDivides = (bbox1, bbox2) => {
   for (let i = 0; i < bbox1.length; i++) {
     const a = new Vector(bbox1[i].position);
@@ -85,6 +113,9 @@ const checkCollisionDivides = (bbox1, bbox2) => {
       const ad = d.minus(a);
       const sameSign = v.dot(ad) * bbox1Sign > 0;
       divides = divides && !sameSign;
+      if (!divides) {
+        break;
+      }
     }
     if (divides) {
       return true;
@@ -94,9 +125,21 @@ const checkCollisionDivides = (bbox1, bbox2) => {
   return false;
 };
 
-const checkPolyCollision = (bbox1, bbox2) =>
-  !(checkCollisionDivides(bbox1, bbox2) ||
-    checkCollisionDivides(bbox2, bbox1));
+const checkPolyCollision = (bbox1, bbox2) => {
+  if (bbox1.length && bbox2.length) {
+    return !(checkCollisionDivides(bbox1, bbox2) ||
+      checkCollisionDivides(bbox2, bbox1));
+  } else if (bbox1.length && bbox2.center) {
+    return !checkBoxAndCircleDivides(bbox1, bbox2);
+  } else if (bbox1.center && bbox2.length) {
+    return !checkBoxAndCircleDivides(bbox2, bbox1);
+  } else if (bbox1.center && bbox2.center) {
+    // TODO:
+    return !checkCircleAndCircle(bbox1, bbox2);
+  }
+
+  return false;
+};
 
 module.exports.checkCollision = (polys1, polys2) => {
   for (let i = 0; i < polys1.length; i++) {

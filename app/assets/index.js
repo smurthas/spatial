@@ -100,22 +100,43 @@ const textures = {
     src: sideTable01,
     scale: 800,
     collisionPolys: [
-      [
-        { x: 10, y: 250 },
-        { x: 80, y: 420 },
-        { x: 250, y: 490 },
-        { x: 420, y: 420 },
-        { x: 490, y: 250 },
-        { x: 420, y: 80 },
-        { x: 250, y: 10 },
-        { x: 80, y: 80 },
-      ],
+      {
+        center: {
+          x: 250,
+          y: 250,
+        },
+        radius: 234,
+      },
     ],
   },
 
   // vehicles
   car01: { src: car01Texture, height: 256, width: 256, scale: 48 },
-  car02: { src: car02Texture, height: 256, width: 256, scale: 48 },
+  car02: {
+    src: car02Texture,
+    height: 256,
+    width: 256,
+    scale: 48,
+    /* Unused for now, so commented out for performance
+    collisionPolys: [
+      [
+        { x: 230, y: 112 },
+        { x: 211, y: 90 },
+        { x: 194, y: 77 },
+        { x: 88, y: 88 },
+        { x: 60, y: 82 },
+        { x: 28, y: 90 },
+        { x: 20, y: 128 },
+        { x: 28, y: 166 },
+        { x: 60, y: 171 },
+        { x: 88, y: 168 },
+        { x: 194, y: 176 },
+        { x: 211, y: 166 },
+        { x: 230, y: 140 },
+      ],
+    ],
+    */
+  },
   car03: { src: car03Texture, height: 256, width: 256, scale: 48 },
   miniTruck: { src: miniTruckTexture, height: 256, width: 256, scale: 48 },
   miniVan: { src: miniVanTexture, height: 256, width: 256, scale: 48 },
@@ -124,16 +145,13 @@ const textures = {
     src: diffDriveTexture,
     scale: 1230,
     collisionPolys: [
-      [
-        { x: 243, y: 35 },
-        { x: 93, y: 93 },
-        { x: 35, y: 243 },
-        { x: 93, y: 393 },
-        { x: 243, y: 451 },
-        { x: 393, y: 393 },
-        { x: 451, y: 243 },
-        { x: 393, y: 93 },
-      ],
+      {
+        center: {
+          x: 243,
+          y: 243,
+        },
+        radius: 220,
+      },
     ],
   },
   diffDriveCharger: {
