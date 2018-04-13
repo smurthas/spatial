@@ -56,6 +56,7 @@ export default class Slalom extends EgoBase {
     this.BOX_START_Y = startY + 200;
     this.BOX_STOP_Y = startY + 230;
 
+    this.poses = [];
     this.map.areas = [
       ...this.map.areas,
       {
@@ -106,6 +107,7 @@ export default class Slalom extends EgoBase {
   reset() {
     // TODO: calculate this differently so the level object isn't stateful
     this.conesPassed = {};
+    this.poses = [];
   }
 
   getSensors({ pose }) {
@@ -120,9 +122,10 @@ export default class Slalom extends EgoBase {
       this.previousState = state;
     }
     const { pose, tPrev } = state;
+    this.poses.push(pose);
+    const poses = this.poses;
     const { x, y } = pose;
 
-    const { poses = [] } = state;
     const dt = tPrev - this.previousState.tPrev;
     const v = poses.length < 2 ? 0 :
       (new Vector(poses.slice(-1)[0])).minus(new Vector(poses.slice(-2)[0])).magnitude() / dt;

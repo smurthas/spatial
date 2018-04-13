@@ -179,15 +179,10 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     }
   }
 
-  componentDidUpdate() {
-    if (this.props.level.running) {
-      // TODO: no settimeout to make testing better?
-      setTimeout(() => {
-        if (this.props.level.running) {
-          this.props.onStep();
-        }
-      }, 1);
-    }
+  componentDidMount() {
+    window.requestAnimationFrame(() => {
+      this.stepIfRunning();
+    });
   }
 
   setCodeFlash({ message = null, level = null } = {}) {
@@ -216,6 +211,14 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
       type: 'poly',
     }));
   }
+
+  stepIfRunning() {
+    if (this.props.level.running) {
+      this.props.onStep();
+    }
+    window.requestAnimationFrame(() => this.stepIfRunning());
+  }
+
 
   objectsFromVehicle() {
     const {

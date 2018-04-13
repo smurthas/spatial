@@ -45,9 +45,17 @@ export default class HelloDidi extends DidiBase {
     };
 
     this.hitCount = 0;
+    this.poses = [];
   }
 
-  checkGoal({ poses }) {
+  reset() {
+    this.poses = [];
+  }
+
+  checkGoal({ pose }) {
+    // TODO: keep a running log of ogrid filled in, rather than recompute
+    this.poses.push(pose);
+    const poses = this.poses;
     const { rows, cols } = this.grid;
     const doneCount = rows * cols * 0.5;
     const ogrid = computeOGridFromPoses({ poses, ...this.grid });

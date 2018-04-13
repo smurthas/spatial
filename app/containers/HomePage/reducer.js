@@ -89,6 +89,7 @@ const reset = (state) => {
   // TODO:
   //   reset level (maybe remove?)
   //   new robot from code (e.g. clear any state from eval'd js
+  levelObject.reset();
   const actorsStates = fromJS((levelObject.actors || []).map(a => a.state));
   const newState = state.merge(BASE_STATE)
                         .set('actorsStates', actorsStates);
@@ -169,7 +170,15 @@ const stepOnce = (state) => {
   }
   const stepStartingState = next.set('tPrev', tPrev);
 
-  const { pass: passMessage=false, fail: failMessage=false } = levelObject.checkGoal(stepStartingState.toJS()) || {};
+  const passedState = {
+    pose,
+    tPrev,
+  };
+  const {
+    pass: passMessage=false,
+    fail: failMessage=false,
+  } = levelObject.checkGoal(passedState) || {};
+
   if (passMessage) {
     const message = `Goal completed in ${Math.round(tPrev*100)/100} seconds!`;
     return pass(pause(stepStartingState), { message });

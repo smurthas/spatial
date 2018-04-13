@@ -44,7 +44,7 @@ export default class HelloTopics extends EgoBase {
     };
   }
 
-  checkGoal({ pose, tPrev=0 }) {
+  checkGoal({ pose, tPrev = 0 }) {
     const fail = tPrev >= this.timeout &&
         `need to reach the finish line in < ${this.timeout} seconds -- try accelerating faster!`;
     const pass = !fail && pose.y > this.finishY;

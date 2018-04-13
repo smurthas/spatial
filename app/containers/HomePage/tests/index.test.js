@@ -17,6 +17,8 @@ global.window.localStorage = {
   getItem() {},
 };
 
+global.window.requestAnimationFrame = () => {};
+
 import configureStore from '../../../store';
 import ConnectedHomePage, { HomePage } from '../index';
 import assets from '../../../assets';

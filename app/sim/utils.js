@@ -134,7 +134,6 @@ const checkPolyCollision = (bbox1, bbox2) => {
   } else if (bbox1.center && bbox2.length) {
     return !checkBoxAndCircleDivides(bbox2, bbox1);
   } else if (bbox1.center && bbox2.center) {
-    // TODO:
     return !checkCircleAndCircle(bbox1, bbox2);
   }
 
