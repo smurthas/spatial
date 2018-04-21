@@ -1,5 +1,4 @@
 import { fromJS } from 'immutable';
-import { parseScript } from 'esprima';
 
 import Simulator from '../../sim/sim';
 import BicyclePathFollower from '../../sim/controllers/bicycle';
@@ -9,6 +8,7 @@ import Worlds from '../../levels';
 
 import { saveCodeForLevel, getCodeForLevel } from '../../utils/codeStore';
 import { postCodeForLevel } from '../../utils/solutions';
+import { validateSyntax, normalizeErr } from '../../utils/codeCheck';
 
 class SynchronousEmitter {
   constructor() {
@@ -166,7 +166,7 @@ const stepOnce = (state) => {
   // TODO: s/tPrev/t||timestamp/g
   const tPrev = stepCount * dt;
   if (tPrev > timeout) {
-    return fail(pause(state), { message: 'Time is up!' });
+    return fail(pause(state), { message: `${egoName} ran out of time! Try again!` });
   }
   const stepStartingState = next.set('tPrev', tPrev);
 
@@ -175,8 +175,8 @@ const stepOnce = (state) => {
     tPrev,
   };
   const {
-    pass: passMessage=false,
-    fail: failMessage=false,
+    pass: passMessage = false,
+    fail: failMessage = false,
   } = levelObject.checkGoal(passedState) || {};
 
   if (passMessage) {
@@ -204,7 +204,15 @@ const stepOnce = (state) => {
     ...tickInput,
     [egoName]: ego,
   };
-  tick(input, publish);
+  try {
+    tick(input, publish);
+  } catch (err) {
+    const runtimeError = normalizeErr(err);
+
+    return fail(pause(stepStartingState), {
+      message: `Error during run: ${err.toString()}`,
+    }).set('syntaxError', runtimeError);
+  }
 
   const actorsStates = stepStartingState.get('actorsStates').toJS();
   const newActorsStates = simulator.step(dt, actorsStates);
@@ -231,33 +239,26 @@ const stepOnce = (state) => {
 };
 
 const setCode = (state, { code }) => {
-  const withCode = state.set('code', code);
-  let parsed = false;
-  try {
-    parseScript(code);
-    parsed = true;
-  } catch (parseErr) {
-    // eslint-disable-next-line no-console
-    console.error('User code parsing err', parseErr);
-    // eslint-disable-next-line no-console
-    console.log(code.split('\n')[parseErr.lineNumber - 1]);
-    return reset(withCode.set('syntaxError', parseErr));
-  }
-
-  if (parsed) {
-    try {
-      robot = evalCode(code);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('User code runtime err', err);
-    }
-  }
+  const withCode = reset(state.set('code', code)).delete('syntaxError');
 
   const world = state.get('world');
   const level = state.get('level');
   saveCodeForLevel({ world, level, code });
 
-  return reset(withCode.delete('syntaxError'));
+  try {
+    validateSyntax(code);
+  } catch (parseErr) {
+    return withCode.set('syntaxError', parseErr);
+  }
+
+  try {
+    robot = evalCode(code);
+  } catch (err) {
+    const e = normalizeErr(err);
+    return withCode.set('syntaxError', e);
+  }
+
+  return withCode;
 };
 
 const resetCodeToDefault = (state) => setCode(state, { code: state.get('info').defaultCode });

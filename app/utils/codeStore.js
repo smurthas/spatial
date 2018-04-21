@@ -1,6 +1,4 @@
 
-const store = window.localStorage;
-
 const KEY = 'spatial-code';
 const SUB_KEY = 'values';
 
@@ -8,7 +6,7 @@ const CURRENT_VERSION = '0.0.0';
 
 const getAllCode = () => {
   try {
-    const codeStr = store.getItem(KEY);
+    const codeStr = window.localStorage.getItem(KEY);
     const all = JSON.parse(codeStr) || {};
     if (all.version === CURRENT_VERSION) {
       return all[SUB_KEY] || [];
@@ -27,7 +25,7 @@ const setAllCode = (allCode) => {
       version: CURRENT_VERSION,
       [SUB_KEY]: allCode,
     };
-    store.setItem(KEY, JSON.stringify(all));
+    window.localStorage.setItem(KEY, JSON.stringify(all));
     return true;
   } catch (err) {
     // TODO: handle this?

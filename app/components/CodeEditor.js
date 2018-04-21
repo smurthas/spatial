@@ -28,6 +28,10 @@ export default class CodeEditor extends Component {
     this.setEditor = this.setEditor.bind(this);
   }
 
+  componentDidMount() {
+    this.setSyntaxErrorMarkers();
+  }
+
   shouldComponentUpdate(nextProps) {
     const codeChanged = this.props.code !== nextProps.code;
     if (codeChanged) {
@@ -63,6 +67,14 @@ export default class CodeEditor extends Component {
   }
 
   componentDidUpdate() {
+    this.setSyntaxErrorMarkers();
+  }
+
+  onChange(e, d, value) {
+    this.props.onCodeChange(value);
+  }
+
+  setSyntaxErrorMarkers() {
     const { editor } = this;
     if (!editor) {
       return;
@@ -72,6 +84,9 @@ export default class CodeEditor extends Component {
     const { syntaxError } = this.props;
     if (syntaxError) {
       const { lineNumber, column } = syntaxError;
+      if (isNaN(lineNumber) || isNaN(column)) {
+        return;
+      }
       const line = lineNumber - 1;
       editor.addLineClass(line, 'text', 'CodeMirror-syntax-error');
       editor.setGutterMarker(line, 'CodeMirror-syntax-errors-gutter', makeMarker());
@@ -80,9 +95,6 @@ export default class CodeEditor extends Component {
     }
   }
 
-  onChange(e, d, value) {
-    this.props.onCodeChange(value);
-  }
 
   setEditor(editor) {
     this.editor = editor;

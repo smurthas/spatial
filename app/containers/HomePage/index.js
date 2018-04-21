@@ -17,6 +17,7 @@ import SplitPane from 'react-split-pane';
 import Markdown from 'react-markdown';
 import leftPad from 'left-pad';
 import copy from 'clipboard-copy';
+import debounce from 'lodash/debounce';
 
 // import EventEmitter from 'events';
 
@@ -118,7 +119,7 @@ ControlButton.propTypes = {
   disabled: PropTypes.bool,
   onClick: PropTypes.func.isRequired,
   icon: PropTypes.object.isRequired,
-  text: PropTypes.string.isRequired,
+  text: PropTypes.string,
   style: PropTypes.object,
 };
 
@@ -153,11 +154,17 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     this.promptResetCode = this.promptResetCode.bind(this);
     this.shareSolution = this.shareSolution.bind(this);
     this.hideLevelInfo = this.hideLevelInfo.bind(this);
+    this.showSyntaxError = debounce(() => {
+      this.setState({
+        showSyntaxError: true,
+      });
+    }, 500);
 
     this.state = {
       splitWidth: DEFAULT_SPLIT_WIDTH,
       showLevelInfo: true,
       showActorBoundingBoxes: false, // no UI to change right now, just for debug
+      showSyntaxError: true,
     };
   }
 
@@ -185,7 +192,19 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     });
   }
 
-  setCodeFlash({ message = null, level = null } = {}) {
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.level.syntaxError) {
+      this.showSyntaxError();
+    } else {
+      this.showSyntaxError.cancel();
+      this.setState({
+        showSyntaxError: false,
+      });
+    }
+  }
+
+
+  setCodeHeaderFlash({ message = null, level = null } = {}) {
     this.setState({
       codeFlashMessage: message,
       codeFlashLevel: level,
@@ -311,15 +330,15 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
     publishSolutionForLevel({ world, level, code, user, token }, (err, { sha: shaFromServer } = {}) => {
       if (err) {
         // TODO: show error?
-        this.setCodeFlash({ message: 'Failed to publish solution :(', level: 'error' });
+        this.setCodeHeaderFlash({ message: 'Failed to publish solution :(', level: 'error' });
       } else if (shaFromServer !== shaValue) {
         // TODO: hmm, waaat??
-        this.setCodeFlash({ message: 'Failed to publish solution :(', level: 'error' });
+        this.setCodeHeaderFlash({ message: 'Failed to publish solution :(', level: 'error' });
       } else {
         this.props.router.push(path);
-        this.setCodeFlash({ message: `Copied ${url} to clipboard`, level: 'ok' });
+        this.setCodeHeaderFlash({ message: `Copied ${url} to clipboard`, level: 'ok' });
       }
-      setTimeout(() => this.setCodeFlash(), 10000);
+      setTimeout(() => this.setCodeHeaderFlash(), 10000);
     });
   }
 
@@ -354,6 +373,9 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
 
     const worldFlashLevel = (failed && 'error') || (passed && 'ok') || '';
     const timedout = failed && (tPrev >= timeout);
+
+    const codeEditorFlashLevel = this.state.showSyntaxError && syntaxError && 'error';
+    const codeEditorFlashMessage = this.state.showSyntaxError && syntaxError && syntaxError.description;
 
     return (
       <div style={{ height: '100%' }}>
@@ -410,7 +432,7 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
             width={this.state.splitWidth}
             height={540}
             flashLevel={worldFlashLevel}
-            flashMessage={passed || failed}
+            flashMessage={passed || failed || ''}
             flashButtonMessage={passed ? 'next level' : null}
             onFlashButton={() => this.props.onNextLevel()}
           />
@@ -440,11 +462,11 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
 
               <FlashMessage
                 style={{ paddingRight: 15, textAlign: 'right' }}
-                level={this.state.codeFlashMessage && this.state.codeFlashLevel}
+                level={this.state.codeFlashMessage && this.state.codeFlashLevel || ''}
               >
                 {this.state.codeFlashMessage}
                 <ControlButton
-                  onClick={() => this.setCodeFlash()}
+                  onClick={() => this.setCodeHeaderFlash()}
                   icon={faWindowClose}
                 />
               </FlashMessage>
@@ -473,6 +495,12 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
                 syntaxError={this.props.level.syntaxError}
               />
             </div>
+
+            <FlashMessage
+              level={codeEditorFlashMessage && codeEditorFlashLevel || ''}
+            >
+              {codeEditorFlashMessage}
+            </FlashMessage>
           </div>
         </SplitPane>
       </div>
@@ -491,10 +519,12 @@ HomePage.propTypes = {
   onSetCode: PropTypes.func.isRequired,
   onResetCodeToDefault: PropTypes.func.isRequired,
   level: PropTypes.object.isRequired,
-  params: {
+  params: PropTypes.shape({
     world: PropTypes.string.isRequired,
     level: PropTypes.string.isRequired,
-  },
+    codeUUID: PropTypes.string,
+    user: PropTypes.string,
+  }),
   router: PropTypes.object.isRequired,
 };
 

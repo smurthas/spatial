@@ -6,7 +6,6 @@ import path from 'path';
 import { Image } from 'canvas';
 import { mount } from 'enzyme';
 import React from 'react';
-import sinon from 'sinon';
 import { Provider } from 'react-redux';
 import { browserHistory } from 'react-router';
 
@@ -65,10 +64,8 @@ expect.extend({
 });
 
 describe('<HomePage />', () => {
-  let store;
   let createPage;
   beforeAll((done) => {
-    store = configureStore({}, browserHistory);
     assets.setLoadedCallback(() => {
       // patch in the img data from disk
       patchImgs();
@@ -76,8 +73,9 @@ describe('<HomePage />', () => {
         getBoundingClientRect: () => ({ left: 0, right: 0, top: 0, bottom: 0 }),
         getClientRects: () => ({ left: 0, right: 0, top: 0, bottom: 0 }),
       });
-      sinon.spy(ConnectedHomePage.prototype, 'render');
+
       createPage = ({ world, level }) => {
+        const store = configureStore({}, browserHistory);
         const wrapper = mount(
           <Provider store={store}>
             <ConnectedHomePage params={{ world, level }} />
@@ -102,17 +100,40 @@ describe('<HomePage />', () => {
           },
           replaceInCode: (toFind, replaceWith) =>
             homePage.props().onSetCode(homePage.prop('level').code.replace(toFind, replaceWith)),
+          unmount: () => wrapper.unmount(),
         };
       };
       done();
     });
   });
 
-  it('should pass the first level', () => {
-    const { homePage, step, assertTime, replaceInCode } = createPage({ world: 0, level: 1 });
-    // once to start, then once to set the level
-    expect(ConnectedHomePage.prototype.render.callCount).toEqual(2);
+  it('should catch syntax errors', () => {
+    const { homePage, replaceInCode, unmount } = createPage({ world: '0', level: '0' });
+    replaceInCode('TURN_LEFT_UNTIL_X = 0.7', 'TURN_LEFT_UNTIL_X = q');
+    const {
+      // description,
+      lineNumber: lineNumber1,
+      column: column1,
+    } = homePage.prop('level').syntaxError;
+    expect(lineNumber1).toBeGreaterThan(0);
+    expect(column1).toBeGreaterThan(0);
 
+    replaceInCode('TURN_LEFT_UNTIL_X = q', 'TURN_LEFT_UNTIL_X = 0.7');
+    expect(homePage.prop('level').syntaxError).toBeFalsy();
+
+    replaceInCode('const GO_STRAIGHT', 'TURN_LEFT = 1;\nconst GO_STRAIGHT');
+    const {
+      // description,
+      lineNumber: lineNumber3,
+      column: column3,
+    } = homePage.prop('level').syntaxError;
+    expect(lineNumber3).toBeGreaterThan(0);
+    expect(column3).toBeGreaterThan(0);
+    unmount();
+  });
+
+  it('should pass the first level', () => {
+    const { homePage, step, assertTime, replaceInCode, unmount } = createPage({ world: '0', level: '1' });
     homePage.props().onSetLevel({ world: 0, level: 0 });
 
     // Move forward on first level
@@ -129,12 +150,11 @@ describe('<HomePage />', () => {
 
     expect(!!homePage.prop('level').passed).toEqual(true);
     expect(!!homePage.prop('level').failed).toEqual(false);
+    unmount();
   });
 
   it('should stop when it collides', () => {
-    const { homePage, step, assertTime, assertPose, replaceInCode } = createPage({ world: 0, level: 1 });
-    // once to start, then once to set the level
-    // expect(ConnectedHomePage.prototype.render.callCount).toEqual(2);
+    const { homePage, step, assertTime, assertPose, replaceInCode } = createPage({ world: '0', level: '1' });
 
     homePage.props().onSetLevel({ world: 0, level: 1 });
 
@@ -155,7 +175,7 @@ describe('<HomePage />', () => {
   });
 
   it('should fail the first Ego level by default and then pass with greater A', () => {
-    const { homePage, step, reset, assertTime } = createPage({ world: 1, level: 0 });
+    const { homePage, step, reset, assertTime } = createPage({ world: '1', level: '0' });
 
     assertTime(0);
 
