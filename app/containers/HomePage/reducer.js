@@ -4,6 +4,8 @@ import Simulator from '../../sim/sim';
 import BicyclePathFollower from '../../sim/controllers/bicycle';
 import DiffDriveSafetryController from '../../sim/controllers/diffDriveSafety';
 import Transform from '../../sim/transform';
+import OGrid from '../../sim/OGrid';
+import Vector from '../../sim/Vector';
 import Worlds from '../../levels';
 
 import { saveCodeForLevel, getCodeForLevel } from '../../utils/codeStore';
@@ -45,6 +47,8 @@ const BASE_STATE = fromJS({
 const modules = {
   'pid-path-follower': BicyclePathFollower,
   'diff-drive-safety-controller': DiffDriveSafetryController,
+  ogrid: OGrid,
+  vector: Vector,
   transform: Transform,
 };
 

@@ -226,7 +226,7 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
       y: actorsStates[i].pose.position.y,
       heading: actorsStates[i].pose.orientation && actorsStates[i].pose.orientation.yaw || 0,
       collisionPolysM: asset.collisionPolysM,
-      fillColor: 'rgba(222, 62, 62, 0.6)',
+      fillColor: 'rgba(62, 222, 62, 0.8)',
       type: 'poly',
     }));
   }
@@ -246,9 +246,10 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
       info = {},
       actorsStates = [],
       actors = [],
+      robotDisplay = [],
     } = this.props.level;
 
-    const levelMarkers = (info.display || []).map(levelDisplay => {
+    const levelMarkers = [...robotDisplay, ...(info.display || [])].map(levelDisplay => {
       const { type } = levelDisplay;
       if (type === 'points') {
         // TODO: support `from` field
@@ -280,6 +281,28 @@ class HomePage extends React.PureComponent { // eslint-disable-line react/prefer
             length: resolution,
           };
         });
+      } else if (type === 'ogrid') {
+        const items = [];
+        const { grid, fillColor: constFillColor, fillColors } = levelDisplay;
+        const { rows, cols, resolution, origin } = grid;
+        for (let r = -(rows - 1)/2; r < (rows - 1)/2; r++) {
+          for (let c = -(cols - 1)/2; c < (cols - 1)/2; c++) {
+            const x = origin.x + (c * resolution);
+            const y = origin.y + (r * resolution);
+            const v = grid.getCell(r, c);
+            const fillColor = (constFillColor ? (v && constFillColor || null) : fillColors(v)) || 'rgba(0,0,0,0)';
+            items.push({
+              type: 'rect',
+              fillColor,
+              x,
+              y,
+              width: resolution,
+              length: resolution,
+            });
+          }
+        }
+
+        return items;
       }
 
       return [];
