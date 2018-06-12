@@ -161,8 +161,9 @@ const stepOnce = (state) => {
   const {
     timeout = 60,
     ego: { actorsIndex = 0, name: egoName },
+    collisionIsFailure,
   } = state.get('info');
-  const egoState = state.get('actorsStates').toJS()[actorsIndex];
+  const actorsStates = state.get('actorsStates').toJS();
   const stepCount = state.get('stepCount') + 1;
   const next = state.set('stepCount', stepCount);
   const dt = state.get('dt');
@@ -199,36 +200,76 @@ const stepOnce = (state) => {
   };
 
   const publish = (topic, evt) => topics.emit(topic, evt);
-  const { tick = () => undefined } = robot;
-  const ego = {
-    setControls: ctrls => topics.emit(`/${actorsNames[actorsIndex]}/controls`, ctrls),
-    ...egoState,
-  };
-  const input = {
-    ...tickInput,
-    [egoName]: ego,
-  };
-  try {
-    tick(input, publish);
-  } catch (err) {
-    const runtimeError = normalizeErr(err);
 
-    return fail(pause(stepStartingState), {
-      message: `Error during run: ${err.toString()}`,
-    }).set('syntaxError', runtimeError);
+  const tickActor = ({ index }) => {
+    const userDefined = index === actorsIndex;
+    const actor = state.get('actors')[index];
+    const tick = userDefined ? robot.tick : actor.tick;
+
+    if (!tick) {
+      return [];
+    }
+    const name = actorsNames[index];
+    const actorState = actorsStates[index];
+    const self = {
+      setControls: ctrls => publish(`/${name}/controls`, ctrls),
+      ...actorState,
+    };
+
+    const accDisplayItems = [];
+    const input = {
+      ...tickInput,
+      [name]: self,
+      self,
+      display(obj) {
+        accDisplayItems.push(obj);
+      },
+    };
+
+    tick.apply(tick, [input, publish]);
+    return accDisplayItems;
+  };
+
+
+  let displayItems = [];
+  for (let i = 0; i < actorsStates.length; i++) {
+    try {
+      displayItems = [
+        ...displayItems,
+        ...tickActor({ index: i }),
+      ];
+    } catch (err) {
+      if (i === actorsIndex) {
+        const runtimeError = normalizeErr(err);
+
+        return fail(pause(stepStartingState), {
+          message: `Error during run: ${err.toString()}`,
+        }).set('syntaxError', runtimeError);
+      }
+
+      // eslint-disable-next-line no-console
+      console.error('err', err);
+    }
   }
 
-  const actorsStates = stepStartingState.get('actorsStates').toJS();
   const newActorsStates = simulator.step(dt, actorsStates);
 
-  const afterStepState = stepStartingState.set('actorsStates', fromJS(newActorsStates));
+  const afterStepState = stepStartingState.set('actorsStates', fromJS(newActorsStates))
+    .set('robotDisplay', displayItems);
 
   // TODO: don't hard code to this actor
   const newPose = newActorsStates[actorsIndex].pose;
   const { position = {}, orientation = {} } = newPose;
+  if (collisionIsFailure) {
+    const anyCollisions = newActorsStates.reduce((acc, { collision }) => acc || collision, false);
+    if (anyCollisions) {
+      const message = `Collision! ${anyCollisions}`;
+      return fail(pause(stepStartingState), { message });
+    }
+  }
   newActorsStates.forEach((newActorsState, i) => {
     if (newActorsState.collision) {
-      publish(`/${actorsNames[i]}/collision`, {});
+      publish(`/${actorsNames[i]}/collision`, newActorsState.collision);
     }
   });
 
