@@ -5,7 +5,7 @@ import assets from '../assets';
 
 const defaultState = () => ({ pose: new Pose(), velocity: new Velocity() });
 
-const ego = ({ name = 'ego', state = defaultState() } = {}) => ({
+const ego = ({ name = 'ego', state = defaultState(), primaryCollider } = {}) => ({
   name,
   draw: {
     type: 'img',
@@ -18,6 +18,7 @@ const ego = ({ name = 'ego', state = defaultState() } = {}) => ({
     lr: 2.7,
   },
   state,
+  primaryCollider,
 });
 
 export default ego;

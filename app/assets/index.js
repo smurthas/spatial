@@ -41,6 +41,28 @@ const callIfLoaded = () => {
 };
 
 
+const car0Base = {
+  height: 256,
+  width: 256,
+  scale: 48,
+  collisionPolys: [
+    [
+      { x: 230, y: 112 },
+      { x: 211, y: 90 },
+      { x: 194, y: 77 },
+      { x: 60, y: 82 },
+      { x: 28, y: 90 },
+      { x: 20, y: 128 },
+      { x: 28, y: 166 },
+      { x: 60, y: 171 },
+      { x: 194, y: 176 },
+      { x: 211, y: 166 },
+      { x: 230, y: 140 },
+    ],
+  ],
+};
+
+
 const textures = {
   // map tiles
   asphalt: { src: asphaltTexture, height: 256, width: 256, scale: 10 },
@@ -111,36 +133,30 @@ const textures = {
   },
 
   // vehicles
-  car01: { src: car01Texture, height: 256, width: 256, scale: 48 },
+  car01: {
+    src: car01Texture,
+    ...car0Base,
+  },
   car02: {
     src: car02Texture,
-    height: 256,
-    width: 256,
-    scale: 48,
-    /* Unused for now, so commented out for performance
-    collisionPolys: [
-      [
-        { x: 230, y: 112 },
-        { x: 211, y: 90 },
-        { x: 194, y: 77 },
-        { x: 88, y: 88 },
-        { x: 60, y: 82 },
-        { x: 28, y: 90 },
-        { x: 20, y: 128 },
-        { x: 28, y: 166 },
-        { x: 60, y: 171 },
-        { x: 88, y: 168 },
-        { x: 194, y: 176 },
-        { x: 211, y: 166 },
-        { x: 230, y: 140 },
-      ],
-    ],
-    */
+    ...car0Base,
   },
-  car03: { src: car03Texture, height: 256, width: 256, scale: 48 },
-  miniTruck: { src: miniTruckTexture, height: 256, width: 256, scale: 48 },
-  miniVan: { src: miniVanTexture, height: 256, width: 256, scale: 48 },
-  taxi: { src: taxiTexture, height: 256, width: 256, scale: 48 },
+  car03: {
+    src: car03Texture,
+    ...car0Base,
+  },
+  miniTruck: {
+    src: miniTruckTexture,
+    ...car0Base,
+  },
+  miniVan: {
+    src: miniVanTexture,
+    ...car0Base,
+  },
+  taxi: {
+    src: taxiTexture,
+    ...car0Base,
+  },
   diffDrive: {
     src: diffDriveTexture,
     scale: 1230,
