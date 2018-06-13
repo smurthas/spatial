@@ -114,7 +114,9 @@ class Simulator {
       if (didCollide) {
         return {
           ...actorsStates[i],
-          collision: true,
+          collision: {
+            pose: newStates[i].pose,
+          },
         };
       }
 

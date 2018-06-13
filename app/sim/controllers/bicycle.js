@@ -65,7 +65,6 @@ class BicycleController {
     }
 
     const [prev, next] = this.getNextTwoWaypoints();
-
     const dy = next.position.y - prev.position.y;
     const dx = next.position.x - prev.position.x;
     const yaw = Math.atan2(dy, dx);
@@ -89,6 +88,12 @@ class BicycleController {
   }
 
   setPose({ timestamp, pose }) {
+    if (isNaN(timestamp)) {
+      throw new Error(`invalid timestamp ${timestamp}`);
+    }
+    if (!pose) {
+      throw new Error(`invalid pose ${pose}`);
+    }
     if (this.pose) {
       const dt = timestamp - this.lastPoseTimestamp;
       this.velocity = {
@@ -97,6 +102,10 @@ class BicycleController {
     }
     this.pose = new Pose(pose);
     this.lastPoseTimestamp = timestamp;
+  }
+
+  setTargetSpeed(targetSpeed) {
+    this.targetSpeed = targetSpeed;
   }
 }
 

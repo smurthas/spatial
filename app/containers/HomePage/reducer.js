@@ -98,7 +98,15 @@ const reset = (state) => {
   const newState = state.merge(BASE_STATE)
                         .set('actorsStates', actorsStates);
   newSimulatorFromState();
-  return newState;
+
+  // TODO real index
+  const { position = {}, orientation = {} } = actorsStates.toJS()[0].pose;
+
+  const { x, y } = position;
+  const { yaw } = orientation;
+
+  const mPose = fromJS({ x, y, yaw });
+  return newState.set('pose', mPose);
 };
 
 // just set to existing level to generate a new level
