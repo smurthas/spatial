@@ -13,7 +13,10 @@ function tick({ ego }) {
 
 export default class HelloTopics extends EgoBase {
   constructor(options={}) {
-    super(options);
+    super({
+      ...options,
+      egoStartPose: { position: { x: 0 } },
+    });
 
     this.map.areas = [
       ...this.map.areas,

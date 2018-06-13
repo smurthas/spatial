@@ -41,11 +41,12 @@ export default class Slalom extends EgoBase {
   constructor(options = {}) {
     super({
       ...options,
+      startX: 0,
       finishY: (options.startY || 0) + 200,
     });
-    const { startX = 0, startY = 0, cones = 6, dy = 20 } = options;
-    const x = startX;
-    let y = startY;
+    const { cones = 6, dy = 20 } = options;
+    const x = this.startX;
+    let y = this.startY;
     let left;
     this.cones = ' '.repeat(cones).split('').map(() => {
       y += dy + coneFuzz(dy);
@@ -53,8 +54,8 @@ export default class Slalom extends EgoBase {
       return { x, y, passOn: left ? 'left' : 'right' };
     });
 
-    this.BOX_START_Y = startY + 200;
-    this.BOX_STOP_Y = startY + 230;
+    this.BOX_START_Y = this.startY + 200;
+    this.BOX_STOP_Y = this.startY + 230;
 
     this.poses = [];
     this.map.areas = [
@@ -63,7 +64,7 @@ export default class Slalom extends EgoBase {
         type: 'rect',
         name: 'Stop Box',
         fillColor: '#ccc',
-        x: startX,
+        x: this.startX,
         y: (this.BOX_START_Y + this.BOX_STOP_Y) / 2,
         length: 10,
         width: (this.BOX_STOP_Y - this.BOX_START_Y),

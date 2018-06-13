@@ -3,9 +3,53 @@ import ego from '../actors/Ego';
 import Pose from '../sim/Pose';
 import Velocity from '../sim/Velocity';
 
+const LANE_WIDTH = 3.7;
+const RIGHT_LANE_X = 0;
+const LEFT_LANE_X = RIGHT_LANE_X - LANE_WIDTH;
+const DASH_THICKNESS = 0.15;
+const DASH_LENGTH = 3;
+
+const finishBox = (finishX, finishY) => Array.from(' '.repeat(30)).map((_, i) => {
+  const fillColor = i%2 ? '#fff' : '#000';
+  const y = (i % 3) + finishY;
+  const x = Math.floor(i / 3) - 4.5 + finishX;
+  return {
+    type: 'rect',
+    name: `Finish Box ${i}`,
+    fillColor,
+    x,
+    y,
+    length: 1,
+    width: 1,
+  };
+});
+
+const centerLine = ({ x, totalLength }) => {
+  const dashCount = Math.floor(totalLength / DASH_LENGTH);
+  return Array.from(' '.repeat(dashCount)).map((_, i) => ({
+    type: 'rect',
+    name: `Center Line ${i}`,
+    fillColor: i % 4 === 0 ? '#fff' : 'rgba(0,0,0,0)',
+    x,
+    y: -(totalLength/2) + i * DASH_LENGTH,
+    length: DASH_THICKNESS,
+    width: DASH_LENGTH,
+  }));
+};
+
 export default class EgoBase {
   constructor(options={}) {
-    const { startX = 0, startY = 0 } = options;
+    const {
+      startX = -LANE_WIDTH/2,
+      startY = 0,
+      roadWidth = LANE_WIDTH * 2,
+      shoulderWidth = 1.2,
+      egoStartPose = {
+        position: { x: 0, y: 0 },
+        orientation: { yaw: Math.PI / 2 },
+      },
+    } = options;
+    const totalWidth = roadWidth + shoulderWidth * 2;
     const { finishY = startY + 50 } = options;
     const img = (asset, x, y) => ({ type: 'img', asset, x: startX+x, y: startY+y });
     const bushArea = (x, y) => img('bushArea', x, y);
@@ -32,13 +76,33 @@ export default class EgoBase {
           asset: 'asphalt',
           x: this.startX,
           y: (this.finishY + this.startY) / 2,
-          length: 10,
+          length: totalWidth,
           width: 5 * (this.finishY - startY),
         },
 
-        tire(6, 0),
-        tire(6.1, 2.5),
-        tire(6, 4.9),
+        {
+          type: 'rect',
+          name: 'leftShoulder',
+          fillColor: '#fad201',
+          x: this.startX - (roadWidth / 2),
+          y: (this.finishY + this.startY) / 2,
+          length: DASH_THICKNESS,
+          width: 5 * (this.finishY - startY),
+        },
+        {
+          type: 'rect',
+          name: 'rightShoulder',
+          fillColor: '#fff',
+          x: this.startX + (roadWidth / 2),
+          y: (this.finishY + this.startY) / 2,
+          length: DASH_THICKNESS,
+          width: 5 * (this.finishY - startY),
+        },
+        ...centerLine({ x: this.startX, totalLength: 5 * (this.finishY - startY) }),
+
+        tire(totalWidth / 2 + 1.2, 0),
+        tire(totalWidth / 2 + 1.3, 2.5),
+        tire(totalWidth / 2 + 1.15, 4.9),
 
         tree(20, 20),
         tree(14, 31),
@@ -78,15 +142,6 @@ export default class EgoBase {
 
         bushArea(-25, 82.7),
         bushArea(-27, 84.7),
-
-        {
-          type: 'img',
-          name: 'Grid',
-          asset: 'grid',
-          heading: Math.PI / 2,
-          x: this.startX,
-          y: this.startY + 2.7,
-        },
       ],
     };
 
@@ -94,11 +149,12 @@ export default class EgoBase {
       ego({
         state: {
           pose: new Pose({
-            position: { x: 0, y: 0 },
-            orientation: { yaw: Math.PI / 2 },
+            position: egoStartPose.position,
+            orientation: egoStartPose.orientation || { yaw: Math.PI / 2 },
           }),
           velocity: new Velocity(),
         },
+        primaryCollider: true,
       }),
     ];
 
@@ -133,3 +189,9 @@ export default class EgoBase {
   }
 }
 
+export {
+  finishBox,
+  LANE_WIDTH,
+  RIGHT_LANE_X,
+  LEFT_LANE_X,
+};
