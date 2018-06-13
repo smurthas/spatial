@@ -24,10 +24,7 @@ class Transform {
   }
 
   inverse() {
-    if (!this.inverse) {
-      // TODO: invert
-    }
-    return this.inverse;
+    throw new Error('Not implemented!');
   }
 }
 
