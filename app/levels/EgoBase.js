@@ -179,6 +179,11 @@ export default class EgoBase {
         },
       ],
       defaultScale: 8,
+      userImports: {
+        LANE_WIDTH,
+        RIGHT_LANE_X,
+        LEFT_LANE_X,
+      },
     };
   }
 

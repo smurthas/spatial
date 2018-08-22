@@ -3,6 +3,7 @@ import HelloDidi from './HelloDidi';
 import DidiGoesHome from './DidiGoesHome';
 import HelloTopics from './HelloTopics';
 import Slalom from './Slalom';
+import HighwayDriving from './HighwayDriving';
 
 const worlds = [
   {
@@ -19,6 +20,7 @@ const worlds = [
     levels: [
       HelloTopics,
       Slalom,
+      HighwayDriving,
     ],
   },
 ];

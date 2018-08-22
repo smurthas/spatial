@@ -82,9 +82,14 @@ describe('<HomePage />', () => {
           </Provider>
         );
         const homePage = wrapper.find(HomePage);
+        const step = () => homePage.find('button[value="Step"]').simulate('click');
         return {
           homePage,
-          step: () => homePage.find('button[value="Step"]').simulate('click'),
+          step: (n = 1) => {
+            for (let i = 0; i < n; i++) {
+              step();
+            }
+          },
           reset: () => homePage.find('button[value="Reset"]').simulate('click'),
           assertTime: t => {
             const text = homePage.find('#sim-time').text().replace(/[^0-9]/g, '');
@@ -97,6 +102,10 @@ describe('<HomePage />', () => {
             expect(xVal).toBeNearlyEqualTo(x);
             expect(yVal).toBeNearlyEqualTo(y);
             expect(yawVal).toBeNearlyEqualTo(yaw);
+          },
+          assertFailed: () => {
+            expect(homePage.prop('level').passed).toEqual(false);
+            expect(!!homePage.prop('level').failed).toEqual(true);
           },
           replaceInCode: (toFind, replaceWith) =>
             homePage.props().onSetCode(homePage.prop('level').code.replace(toFind, replaceWith)),
@@ -174,6 +183,7 @@ describe('<HomePage />', () => {
     assertPose({ x: 0.62, y: 3.74, yaw: 1.24 });
   });
 
+  // EGO LEVELS
   it('should fail the first Ego level by default and then pass with greater A', () => {
     const { homePage, step, reset, assertTime } = createPage({ world: '1', level: '0' });
 
@@ -182,9 +192,7 @@ describe('<HomePage />', () => {
     step();
     assertTime(0.1);
 
-    for (let i = 0; i < 149; i++) {
-      step();
-    }
+    step(149);
     assertTime(15);
 
     expect(homePage.prop('level').passed).toEqual(false);
@@ -209,10 +217,41 @@ describe('<HomePage />', () => {
     assertTime(0);
     step();
     assertTime(0.1);
-    for (let i = 0; i < 68; i++) {
-      step();
-    }
+    step(68);
     expect(!!homePage.prop('level').passed).toEqual(true);
     expect(homePage.prop('level').failed).toEqual(false);
+  });
+
+  it('should fail the Ego Highway Driving level if ego drives off the road', () => {
+    const { step, assertTime, assertFailed } = createPage({ world: '1', level: '2' });
+
+    assertTime(0);
+
+    step(43);
+    assertTime(4.3);
+    assertFailed();
+
+    step();
+    // assert that button is not clickable
+    assertTime(4.3);
+    assertFailed();
+  });
+
+  it('should fail the Ego Highway Driving level if it collides with another car', () => {
+    const { step, assertTime, replaceInCode, assertFailed } = createPage({ world: '1', level: '2' });
+
+    replaceInCode('setTargetSpeed(5)', 'setTargetSpeed(10)');
+    replaceInCode('d: -1.0', 'd: -2.0');
+
+    assertTime(0);
+
+    step(91);
+    assertTime(9.1);
+    assertFailed();
+
+    step();
+    // assert that button is not clickable
+    assertTime(9.1);
+    assertFailed();
   });
 });

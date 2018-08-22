@@ -52,8 +52,9 @@ const modules = {
   transform: Transform,
 };
 
-function evalCode(code) {
-  const localRequire = (mod) => modules[mod];
+function evalCode(code, userImports) {
+  // TODO: surface import errors cleanly ("did you mean...?")
+  const localRequire = (mod) => mod === 'level' ? userImports : modules[mod];
   const evalThis = {
     require: localRequire,
   };
@@ -271,8 +272,7 @@ const stepOnce = (state) => {
   if (collisionIsFailure) {
     const anyCollisions = newActorsStates.reduce((acc, { collision }) => acc || collision, false);
     if (anyCollisions) {
-      const message = `Collision! ${anyCollisions}`;
-      return fail(pause(stepStartingState), { message });
+      return fail(pause(stepStartingState), { message: 'Collision!' });
     }
   }
   newActorsStates.forEach((newActorsState, i) => {
@@ -296,6 +296,7 @@ const setCode = (state, { code }) => {
 
   const world = state.get('world');
   const level = state.get('level');
+  const { userImports = {} } = state.get('info');
   saveCodeForLevel({ world, level, code });
 
   try {
@@ -305,7 +306,7 @@ const setCode = (state, { code }) => {
   }
 
   try {
-    robot = evalCode(code);
+    robot = evalCode(code, userImports);
   } catch (err) {
     const e = normalizeErr(err);
     return withCode.set('syntaxError', e);
